@@ -1,0 +1,252 @@
+import { useState, useEffect } from 'react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import { Textarea } from './ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Checkbox } from './ui/checkbox';
+import { Slider } from './ui/slider';
+import { ProductFeature, Project } from '../App';
+
+interface EditProjectDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  project: Project | null;
+  features: ProductFeature[];
+  onUpdate: (project: Project) => void;
+}
+
+export function EditProjectDialog({ open, onOpenChange, project, features, onUpdate }: EditProjectDialogProps) {
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [status, setStatus] = useState<Project['status']>('planning');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [progress, setProgress] = useState(0);
+  const [location, setLocation] = useState('');
+  const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
+  const [deployedFeatures, setDeployedFeatures] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (project) {
+      setName(project.name);
+      setDescription(project.description);
+      setStatus(project.status);
+      setStartDate(project.startDate);
+      setEndDate(project.endDate);
+      setProgress(project.progress);
+      setLocation(project.location || '');
+      setSelectedFeatures(project.featuresUsed);
+      setDeployedFeatures(project.deployedFeatures);
+    }
+  }, [project]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (project) {
+      const updatedProject: Project = {
+        ...project,
+        name,
+        description,
+        status,
+        startDate,
+        endDate,
+        progress,
+        location: location.trim() || undefined,
+        featuresUsed: selectedFeatures,
+        deployedFeatures: deployedFeatures.filter(id => selectedFeatures.includes(id)),
+      };
+
+      onUpdate(updatedProject);
+      onOpenChange(false);
+    }
+  };
+
+  const toggleFeature = (featureId: string) => {
+    setSelectedFeatures(prev =>
+      prev.includes(featureId)
+        ? prev.filter(id => id !== featureId)
+        : [...prev, featureId]
+    );
+  };
+
+  const toggleDeployedFeature = (featureId: string) => {
+    setDeployedFeatures(prev =>
+      prev.includes(featureId)
+        ? prev.filter(id => id !== featureId)
+        : [...prev, featureId]
+    );
+  };
+
+  // Group features by category
+  const featuresByCategory = features.reduce((acc, feature) => {
+    if (!acc[feature.category]) {
+      acc[feature.category] = [];
+    }
+    acc[feature.category].push(feature);
+    return acc;
+  }, {} as Record<string, ProductFeature[]>);
+
+  if (!project) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Edit Project</DialogTitle>
+          <DialogDescription>
+            Update project details and feature deployment status.
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="edit-name">Project Name</Label>
+            <Input
+              id="edit-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Enter project name"
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="edit-description">Description</Label>
+            <Textarea
+              id="edit-description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Describe the project"
+              required
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-startDate">Start Date</Label>
+              <Input
+                id="edit-startDate"
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-endDate">End Date</Label>
+              <Input
+                id="edit-endDate"
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                required
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="edit-status">Status</Label>
+            <Select value={status} onValueChange={(value) => setStatus(value as Project['status'])}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="planning">Planning</SelectItem>
+                <SelectItem value="in-progress">In Progress</SelectItem>
+                <SelectItem value="deployed">Deployed</SelectItem>
+                <SelectItem value="completed">Completed</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Progress: {progress}%</Label>
+            <Slider
+              value={[progress]}
+              onValueChange={(value) => setProgress(value[0])}
+              max={100}
+              step={5}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Region</Label>
+            <Select value={location || 'none'} onValueChange={(value) => setLocation(value === 'none' ? '' : value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select project region" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No Region</SelectItem>
+                <SelectItem value="Africa">Africa</SelectItem>
+                <SelectItem value="Americas">Americas</SelectItem>
+                <SelectItem value="Asia/Pacific (APAC)">Asia/Pacific (APAC)</SelectItem>
+                <SelectItem value="Europe">Europe</SelectItem>
+                <SelectItem value="Middle East">Middle East</SelectItem>
+                <SelectItem value="UK/Ireland">UK/Ireland</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Features Used</Label>
+            <div className="border rounded-lg p-4 max-h-64 overflow-y-auto">
+              {Object.entries(featuresByCategory).map(([category, categoryFeatures]) => (
+                <div key={category} className="mb-4 last:mb-0">
+                  <h4 className="text-slate-700 mb-2">{category}</h4>
+                  <div className="space-y-2">
+                    {categoryFeatures.map(feature => {
+                      const isUsed = selectedFeatures.includes(feature.id);
+                      const isDeployed = deployedFeatures.includes(feature.id);
+                      
+                      return (
+                        <div key={feature.id} className="space-y-2 pl-4 border-l-2 border-slate-200">
+                          <div className="flex items-start gap-2">
+                            <Checkbox
+                              id={`use-${feature.id}`}
+                              checked={isUsed}
+                              onCheckedChange={() => toggleFeature(feature.id)}
+                            />
+                            <div className="flex-1">
+                              <Label htmlFor={`use-${feature.id}`} className="cursor-pointer">
+                                {feature.name}
+                              </Label>
+                              <p className="text-slate-600">{feature.description}</p>
+                            </div>
+                          </div>
+                          
+                          {isUsed && (
+                            <div className="flex items-center gap-2 ml-6">
+                              <Checkbox
+                                id={`deploy-${feature.id}`}
+                                checked={isDeployed}
+                                onCheckedChange={() => toggleDeployedFeature(feature.id)}
+                              />
+                              <Label htmlFor={`deploy-${feature.id}`} className="cursor-pointer text-slate-600">
+                                Deployed
+                              </Label>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button type="submit">Update Project</Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
