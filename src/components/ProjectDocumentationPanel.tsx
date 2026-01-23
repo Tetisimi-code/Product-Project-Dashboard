@@ -80,7 +80,7 @@ Actions:
               </div>
 
               <div>
-                <div className="text-slate-400 mb-2">Enabled Products:</div>
+                <div className="text-slate-500 mb-2">Enabled Products:</div>
                 <div className="space-y-1 pl-2">
                   {usedFeatures.map(feature => (
                     <div key={feature.id} className="flex items-start gap-2">
@@ -92,14 +92,14 @@ Actions:
               </div>
 
               <div>
-                <div className="text-slate-400 mb-2">Status:</div>
+                <div className="text-slate-500 mb-2">Status:</div>
                 <div className="pl-2 text-white">
                   {deployedCount} / {totalCount} features deployed
                 </div>
               </div>
 
               <div>
-                <div className="text-slate-400 mb-2">Actions:</div>
+                <div className="text-slate-500 mb-2">Actions:</div>
                 <div className="space-y-1 pl-2">
                   <div className="text-white">[ Generate User Manual ]</div>
                   <div className="text-white">[ Upload Supporting Docs ] <span className="text-slate-500">(optional)</span></div>
