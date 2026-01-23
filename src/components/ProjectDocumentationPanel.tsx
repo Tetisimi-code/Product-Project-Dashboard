@@ -74,9 +74,9 @@ Actions:
               </Button>
             </div>
 
-            <div className="bg-slate-900 text-slate-100 p-6 rounded-lg font-mono text-sm space-y-4">
+            <div className="bg-slate-900 p-6 rounded-lg font-mono text-sm space-y-4">
               <div>
-                <h3 className="text-lg font-semibold mb-3">{project.name}</h3>
+                <h3 className="text-lg font-semibold mb-3 text-white">{project.name}</h3>
               </div>
 
               <div>
@@ -85,7 +85,7 @@ Actions:
                   {usedFeatures.map(feature => (
                     <div key={feature.id} className="flex items-start gap-2">
                       <span className="text-green-400">✓</span>
-                      <span>{feature.name}</span>
+                      <span className="text-white">{feature.name}</span>
                     </div>
                   ))}
                 </div>
@@ -93,7 +93,7 @@ Actions:
 
               <div>
                 <div className="text-slate-400 mb-2">Status:</div>
-                <div className="pl-2">
+                <div className="pl-2 text-white">
                   {deployedCount} / {totalCount} features deployed
                 </div>
               </div>
@@ -101,8 +101,8 @@ Actions:
               <div>
                 <div className="text-slate-400 mb-2">Actions:</div>
                 <div className="space-y-1 pl-2">
-                  <div className="text-slate-300">[ Generate User Manual ]</div>
-                  <div className="text-slate-300">[ Upload Supporting Docs ] <span className="text-slate-500">(optional)</span></div>
+                  <div className="text-white">[ Generate User Manual ]</div>
+                  <div className="text-white">[ Upload Supporting Docs ] <span className="text-slate-500">(optional)</span></div>
                 </div>
               </div>
             </div>
