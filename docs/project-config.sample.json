@@ -1,0 +1,38 @@
+{
+  "projectId": "p1",
+  "projectName": "E-Commerce Platform Launch",
+  "enabledProducts": [
+    "user-authentication",
+    "api-gateway",
+    "payment-processing",
+    "notification-system"
+  ],
+  "variables": {
+    "auth_provider": "Okta",
+    "auth_provider_domain": "example.okta.com",
+    "auth_provider_connection": "default",
+    "mfa_enforced": "true",
+    "mfa_factors": "TOTP, SMS",
+    "backup_codes_enabled": "true",
+    "session_timeout_minutes": "30",
+    "token_refresh_minutes": "5",
+    "max_session_hours": "12",
+    "lockout_threshold": "5",
+    "lockout_duration_minutes": "15",
+    "password_min_length": "12",
+    "password_complexity": "upper/lower/digit/symbol",
+    "mfa_primary_factor": "TOTP",
+    "mfa_fallback_factor": "SMS",
+    "reset_link_expiry_minutes": "30",
+    "reset_email_sender_name": "Security Team",
+    "failed_login_threshold": "10",
+    "failed_login_window_minutes": "5",
+    "mfa_failure_threshold": "3",
+    "mfa_failure_window_minutes": "10",
+    "new_region_alert_enabled": "true",
+    "notify_user_on_lockout": "true",
+    "notify_admin_on_lockout": "true",
+    "admin_notification_emails": "security@example.com, ops@example.com",
+    "audit_retention_days": "180"
+  }
+}

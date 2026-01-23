@@ -1,0 +1,58 @@
+{
+  "user-authentication": [
+    "docs/products/user-authentication/overview.md",
+    "docs/products/user-authentication/how-it-works.md",
+    "docs/products/user-authentication/ui-and-workflows.md",
+    "docs/products/user-authentication/alarms-and-notifications.md",
+    "docs/products/user-authentication/limitations.md"
+  ],
+  "analytics-dashboard": [
+    "docs/products/analytics-dashboard/overview.md",
+    "docs/products/analytics-dashboard/how-it-works.md",
+    "docs/products/analytics-dashboard/ui-and-workflows.md",
+    "docs/products/analytics-dashboard/alarms-and-notifications.md",
+    "docs/products/analytics-dashboard/limitations.md"
+  ],
+  "api-gateway": [
+    "docs/products/api-gateway/overview.md",
+    "docs/products/api-gateway/how-it-works.md",
+    "docs/products/api-gateway/ui-and-workflows.md",
+    "docs/products/api-gateway/alarms-and-notifications.md",
+    "docs/products/api-gateway/limitations.md"
+  ],
+  "payment-processing": [
+    "docs/products/payment-processing/overview.md",
+    "docs/products/payment-processing/how-it-works.md",
+    "docs/products/payment-processing/ui-and-workflows.md",
+    "docs/products/payment-processing/alarms-and-notifications.md",
+    "docs/products/payment-processing/limitations.md"
+  ],
+  "notification-system": [
+    "docs/products/notification-system/overview.md",
+    "docs/products/notification-system/how-it-works.md",
+    "docs/products/notification-system/ui-and-workflows.md",
+    "docs/products/notification-system/alarms-and-notifications.md",
+    "docs/products/notification-system/limitations.md"
+  ],
+  "file-storage": [
+    "docs/products/file-storage/overview.md",
+    "docs/products/file-storage/how-it-works.md",
+    "docs/products/file-storage/ui-and-workflows.md",
+    "docs/products/file-storage/alarms-and-notifications.md",
+    "docs/products/file-storage/limitations.md"
+  ],
+  "reporting-engine": [
+    "docs/products/reporting-engine/overview.md",
+    "docs/products/reporting-engine/how-it-works.md",
+    "docs/products/reporting-engine/ui-and-workflows.md",
+    "docs/products/reporting-engine/alarms-and-notifications.md",
+    "docs/products/reporting-engine/limitations.md"
+  ],
+  "user-management": [
+    "docs/products/user-management/overview.md",
+    "docs/products/user-management/how-it-works.md",
+    "docs/products/user-management/ui-and-workflows.md",
+    "docs/products/user-management/alarms-and-notifications.md",
+    "docs/products/user-management/limitations.md"
+  ]
+}

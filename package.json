@@ -36,6 +36,7 @@
             "clsx": "*",
             "cmdk": "^1.1.1",
             "date-fns": "*",
+            "docx-templates": "^4.15.0",
             "embla-carousel-react": "^8.6.0",
             "hono": "*",
             "input-otp": "^1.4.2",
