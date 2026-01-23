@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
 import { FileText, Copy, Check, FileUp, BookOpen } from 'lucide-react';
 import { useState } from 'react';
+import { toast } from 'sonner@2.0.3';
 
 interface ProjectDocumentationPanelProps {
   open: boolean;
@@ -18,6 +19,7 @@ export function ProjectDocumentationPanel({
   features,
 }: ProjectDocumentationPanelProps) {
   const [copied, setCopied] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const usedFeatures = features.filter(f => project.featuresUsed.includes(f.id));
   const deployedCount = project.deployedFeatures.length;
@@ -39,6 +41,37 @@ Actions:
     navigator.clipboard.writeText(documentationText);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleGenerateManual = async () => {
+    setIsGenerating(true);
+    try {
+      const manualUrl = '/docs/output/user-manual.docx';
+      const response = await fetch(manualUrl);
+
+      if (!response.ok) {
+        throw new Error('Manual not found. Run the assembler to generate it.');
+      }
+
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = downloadUrl;
+      anchor.download = `${project.name.replace(/[^a-z0-9-_]+/gi, '-')}-user-manual.docx`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+
+      toast.success('User manual downloaded', { description: project.name });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to generate manual';
+      toast.error('Generate User Manual failed', {
+        description: message,
+      });
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   return (
@@ -112,10 +145,14 @@ Actions:
             <Button
               className="w-full justify-start gap-2 h-auto py-4"
               variant="outline"
+              onClick={handleGenerateManual}
+              disabled={isGenerating}
             >
               <BookOpen className="size-5" />
               <div className="flex flex-col items-start">
-                <span className="font-semibold">Generate User Manual</span>
+                <span className="font-semibold">
+                  {isGenerating ? 'Generating User Manual...' : 'Generate User Manual'}
+                </span>
                 <span className="text-sm text-slate-500 font-normal">
                   Auto-generate documentation based on enabled features
                 </span>
