@@ -4,11 +4,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { Badge } from './ui/badge';
 import { Progress } from './ui/progress';
 import { Button } from './ui/button';
-import { Calendar, CheckCircle2, Circle, Clock, Pencil, Trash2, Code, TestTube, Rocket, Ban, Undo, AlertCircle, ExternalLink, Link2 } from 'lucide-react';
+import { Calendar, CheckCircle2, Circle, Clock, Pencil, Trash2, Code, TestTube, Rocket, Ban, Undo, AlertCircle, ExternalLink, Link2, FileText } from 'lucide-react';
 import { format } from 'date-fns';
 import { EditProjectDialog } from './EditProjectDialog';
 import { FeatureDeploymentDialog } from './FeatureDeploymentDialog';
 import { JiraLinkDialog } from './JiraLinkDialog';
+import { DocumentationLinkDialog } from './DocumentationLinkDialog';
+import { ProjectDocumentationPanel } from './ProjectDocumentationPanel';
 import { TeamMember } from '../utils/api';
 
 interface ProjectCardProps {
@@ -51,6 +53,8 @@ const deploymentStatusColors = {
 export function ProjectCard({ project, features, currentUser, teamMembers, onUpdate, onDelete, onOpenAtlassianSettings }: ProjectCardProps) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isJiraLinkDialogOpen, setIsJiraLinkDialogOpen] = useState(false);
+  const [isDocLinkDialogOpen, setIsDocLinkDialogOpen] = useState(false);
+  const [isDocPanelOpen, setIsDocPanelOpen] = useState(false);
   const [selectedFeature, setSelectedFeature] = useState<ProductFeature | null>(null);
   const StatusIcon = statusConfig[project.status].icon;
   
@@ -70,6 +74,22 @@ export function ProjectCard({ project, features, currentUser, teamMembers, onUpd
       jiraKey,
       jiraUrl,
     };
+    onUpdate(updatedProject);
+  };
+
+  const handleDocLink = (docUrl: string) => {
+    const updatedProject = {
+      ...project,
+      documentationUrl: docUrl,
+    } as any;
+    onUpdate(updatedProject);
+  };
+
+  const handleRemoveDocLink = () => {
+    const updatedProject = {
+      ...project,
+      documentationUrl: undefined,
+    } as any;
     onUpdate(updatedProject);
   };
 
@@ -166,9 +186,9 @@ export function ProjectCard({ project, features, currentUser, teamMembers, onUpd
             </div>
           </div>
 
-          {/* Atlassian Integration */}
+          {/* Atlassian Integration & Documentation */}
           <div className="pt-2 border-t">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               {(project as any).jiraKey ? (
                 <Button
                   variant="outline"
@@ -201,6 +221,37 @@ export function ProjectCard({ project, features, currentUser, teamMembers, onUpd
                   Confluence Docs
                 </Button>
               )}
+              {(project as any).documentationUrl ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsDocPanelOpen(true)}
+                  className="flex items-center gap-1"
+                >
+                  <FileText className="size-3" />
+                  Documentation
+                </Button>
+              ) : (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsDocLinkDialogOpen(true)}
+                  className="flex items-center gap-1 text-slate-600"
+                >
+                  <FileText className="size-3" />
+                  Add Docs
+                </Button>
+              )}
+              {(project as any).documentationUrl && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsDocLinkDialogOpen(true)}
+                  className="flex items-center gap-1 text-slate-500"
+                >
+                  <Pencil className="size-3" />
+                </Button>
+              )}
             </div>
           </div>
         </CardContent>
@@ -222,6 +273,23 @@ export function ProjectCard({ project, features, currentUser, teamMembers, onUpd
         currentJiraKey={(project as any).jiraKey}
         onLink={handleJiraLink}
         onOpenSettings={onOpenAtlassianSettings}
+      />
+
+      <DocumentationLinkDialog
+        open={isDocLinkDialogOpen}
+        onOpenChange={setIsDocLinkDialogOpen}
+        projectId={project.id}
+        projectName={project.name}
+        currentDocUrl={(project as any).documentationUrl}
+        onLink={handleDocLink}
+        onRemove={handleRemoveDocLink}
+      />
+
+      <ProjectDocumentationPanel
+        open={isDocPanelOpen}
+        onOpenChange={setIsDocPanelOpen}
+        project={project}
+        features={features}
       />
 
       {selectedFeature && (
