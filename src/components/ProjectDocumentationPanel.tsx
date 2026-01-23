@@ -84,7 +84,7 @@ Actions:
                 <div className="space-y-1 pl-2">
                   {usedFeatures.map(feature => (
                     <div key={feature.id} className="flex items-start gap-2">
-                      <span className="text-green-400">✓</span>
+                      <span style={{ color: '#4ade80' }}>✓</span>
                       <span className="text-white">{feature.name}</span>
                     </div>
                   ))}
