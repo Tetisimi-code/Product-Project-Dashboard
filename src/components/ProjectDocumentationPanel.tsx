@@ -58,7 +58,7 @@ Actions:
                 variant="ghost"
                 size="sm"
                 onClick={handleCopy}
-                className="flex items-center gap-1 text-slate-400 hover:text-slate-300"
+                className="flex items-center gap-1 text-slate-500 hover:text-slate-400"
               >
                 {copied ? (
                   <>
