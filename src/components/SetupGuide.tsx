@@ -15,7 +15,7 @@ export function SetupGuide() {
     setIsChecking(true);
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/server/health`,
+        `https://${projectId}.supabase.co/functions/v1/make-server-bbcbebd7/health`,
         {
           headers: {
             'Authorization': `Bearer ${publicAnonKey}`,

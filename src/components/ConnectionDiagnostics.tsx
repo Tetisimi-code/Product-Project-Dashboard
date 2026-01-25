@@ -82,7 +82,7 @@ export function ConnectionDiagnostics({ open, onOpenChange }: ConnectionDiagnost
     // Test 3: API Function Health
     updateTest(2, { status: 'running' });
     try {
-      const apiUrl = `https://${projectId}.supabase.co/functions/v1/server/health`;
+      const apiUrl = `https://${projectId}.supabase.co/functions/v1/make-server-bbcbebd7/health`;
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000);
 
@@ -181,7 +181,7 @@ export function ConnectionDiagnostics({ open, onOpenChange }: ConnectionDiagnost
             <AlertDescription>
               <strong>Project ID:</strong> {projectId}
               <br />
-              <strong>API URL:</strong> https://{projectId}.supabase.co/functions/v1/server
+              <strong>API URL:</strong> https://{projectId}.supabase.co/functions/v1/make-server-bbcbebd7
               <br />
               <strong>Browser:</strong> {navigator.userAgent.split(' ').slice(-1)[0]}
             </AlertDescription>

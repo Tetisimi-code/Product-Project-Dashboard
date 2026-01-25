@@ -460,7 +460,7 @@ export default function App() {
       const token = session?.access_token || localStorage.getItem('accessToken') || '';
       
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/server/delete-my-account`,
+        `https://${projectId}.supabase.co/functions/v1/make-server-bbcbebd7/delete-my-account`,
         {
           method: 'DELETE',
           headers: {
