@@ -36,7 +36,7 @@ export const getApiConfig = () => {
   try {
     const { projectId, publicAnonKey } = require('./supabase/info');
     return {
-      apiUrl: `https://${projectId}.supabase.co/functions/v1/make-server-bbcbebd7`,
+      apiUrl: `https://${projectId}.supabase.co/functions/v1/server`,
       apiKey: publicAnonKey,
       platform: 'supabase' as const,
     };

@@ -88,7 +88,7 @@ export function AccountSettingsDialog({
       // Also update on the server
       const token = await getFreshToken();
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-bbcbebd7/update-profile`,
+        `https://${projectId}.supabase.co/functions/v1/server/update-profile`,
         {
           method: 'POST',
           headers: {
@@ -138,7 +138,7 @@ export function AccountSettingsDialog({
       // Call the server to update email (admin only)
       const token = await getFreshToken();
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-bbcbebd7/update-email`,
+        `https://${projectId}.supabase.co/functions/v1/server/update-email`,
         {
           method: 'POST',
           headers: {

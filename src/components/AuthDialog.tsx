@@ -69,7 +69,7 @@ export function AuthDialog({ open, onAuthSuccess }: AuthDialogProps) {
     try {
       // Call the server to create the user
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-bbcbebd7/signup`,
+        `https://${projectId}.supabase.co/functions/v1/server/signup`,
         {
           method: 'POST',
           headers: {

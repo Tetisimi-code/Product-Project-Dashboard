@@ -29,7 +29,7 @@ function markdownToPlain(content) {
 async function main() {
   const args = process.argv.slice(2);
   const configPath = args[0] || 'docs/project-config.sample.json';
-  const outputPath = args[1] || 'docs/output/user-manual.md';
+  const outputPath = args[1] || 'public/user-manual.md';
   const templatePath = args[2] || 'docs/template.docx';
 
   const config = readJson(configPath);

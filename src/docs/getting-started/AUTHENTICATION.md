@@ -298,7 +298,7 @@ All protected routes require Bearer token:
 ```typescript
 const accessToken = localStorage.getItem('accessToken');
 
-fetch(`https://${projectId}.supabase.co/functions/v1/make-server-bbcbebd7/projects`, {
+fetch(`https://${projectId}.supabase.co/functions/v1/server/projects`, {
   headers: {
     'Authorization': `Bearer ${accessToken}`,
     'Content-Type': 'application/json',

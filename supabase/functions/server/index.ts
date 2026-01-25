@@ -33,7 +33,7 @@ app.use(
 );
 
 // Health check endpoint
-app.get("/server/health", (c) => {
+app.get("//health", (c) => {
   return c.json({ status: "ok" });
 });
 
@@ -195,7 +195,7 @@ async function isUserAdmin(user: any): Promise<boolean> {
 }
 
 // Health check endpoint to verify environment variables
-app.get("/server/health", async (c) => {
+app.get("//health", async (c) => {
   const hasResendKey = !!RESEND_API_KEY;
   const resendKeyPrefix = hasResendKey ? RESEND_API_KEY.substring(0, 4) : 'N/A';
   const resendKeyLength = hasResendKey ? RESEND_API_KEY.length : 0;
@@ -215,7 +215,7 @@ app.get("/server/health", async (c) => {
 });
 
 // Sign up endpoint - NOW CREATES PENDING SIGNUP, NOT ACTUAL USER
-app.post("/server/signup", async (c) => {
+app.post("//signup", async (c) => {
   try {
     const { email, password, name } = await c.req.json();
     
@@ -288,7 +288,7 @@ app.post("/server/signup", async (c) => {
 });
 
 // Verify email with code endpoint - NOW CREATES THE ACTUAL USER ACCOUNT
-app.post("/server/verify-email", async (c) => {
+app.post("//verify-email", async (c) => {
   try {
     const { email, code } = await c.req.json();
     
@@ -352,7 +352,7 @@ app.post("/server/verify-email", async (c) => {
 });
 
 // Resend verification code endpoint - Works with pending signups
-app.post("/server/resend-verification", async (c) => {
+app.post("//resend-verification", async (c) => {
   try {
     const { email } = await c.req.json();
     
@@ -409,7 +409,7 @@ app.post("/server/resend-verification", async (c) => {
 });
 
 // Update profile endpoint
-app.post("/server/update-profile", async (c) => {
+app.post("//update-profile", async (c) => {
   try {
     const authHeader = c.req.header('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
@@ -450,7 +450,7 @@ app.post("/server/update-profile", async (c) => {
 });
 
 // Update email endpoint (admin only)
-app.post("/server/update-email", async (c) => {
+app.post("//update-email", async (c) => {
   try {
     const user = await verifyAdmin(c.req.header('Authorization'));
     if (!user) {
@@ -550,7 +550,7 @@ async function verifyAdmin(authHeader: string | null) {
 // ============================================
 
 // Get all projects
-app.get("/server/projects", async (c) => {
+app.get("//projects", async (c) => {
   try {
     const user = await verifyAuth(c.req.header('Authorization'));
     if (!user) {
@@ -570,7 +570,7 @@ app.get("/server/projects", async (c) => {
 });
 
 // Create project
-app.post("/server/projects", async (c) => {
+app.post("//projects", async (c) => {
   try {
     const user = await verifyAuth(c.req.header('Authorization'));
     if (!user) {
@@ -590,7 +590,7 @@ app.post("/server/projects", async (c) => {
 });
 
 // Update project
-app.put("/server/projects/:id", async (c) => {
+app.put("//projects/:id", async (c) => {
   try {
     const user = await verifyAuth(c.req.header('Authorization'));
     if (!user) {
@@ -618,7 +618,7 @@ app.put("/server/projects/:id", async (c) => {
 });
 
 // Delete project
-app.delete("/server/projects/:id", async (c) => {
+app.delete("//projects/:id", async (c) => {
   try {
     const user = await verifyAuth(c.req.header('Authorization'));
     if (!user) {
@@ -643,7 +643,7 @@ app.delete("/server/projects/:id", async (c) => {
 // ============================================
 
 // Get all features
-app.get("/server/features", async (c) => {
+app.get("//features", async (c) => {
   try {
     const user = await verifyAuth(c.req.header('Authorization'));
     if (!user) {
@@ -659,7 +659,7 @@ app.get("/server/features", async (c) => {
 });
 
 // Create feature
-app.post("/server/features", async (c) => {
+app.post("//features", async (c) => {
   try {
     const user = await verifyAuth(c.req.header('Authorization'));
     if (!user) {
@@ -679,7 +679,7 @@ app.post("/server/features", async (c) => {
 });
 
 // Update feature
-app.put("/server/features/:id", async (c) => {
+app.put("//features/:id", async (c) => {
   try {
     const user = await verifyAuth(c.req.header('Authorization'));
     if (!user) {
@@ -707,7 +707,7 @@ app.put("/server/features/:id", async (c) => {
 });
 
 // Delete feature
-app.delete("/server/features/:id", async (c) => {
+app.delete("//features/:id", async (c) => {
   try {
     const user = await verifyAuth(c.req.header('Authorization'));
     if (!user) {
@@ -741,7 +741,7 @@ app.delete("/server/features/:id", async (c) => {
 // ============================================
 
 // Get category order
-app.get("/server/categories", async (c) => {
+app.get("//categories", async (c) => {
   try {
     const user = await verifyAuth(c.req.header('Authorization'));
     if (!user) {
@@ -757,7 +757,7 @@ app.get("/server/categories", async (c) => {
 });
 
 // Update category order
-app.put("/server/categories", async (c) => {
+app.put("//categories", async (c) => {
   try {
     const user = await verifyAuth(c.req.header('Authorization'));
     if (!user) {
@@ -779,7 +779,7 @@ app.put("/server/categories", async (c) => {
 // ============================================
 
 // Get all audit entries
-app.get("/server/audit", async (c) => {
+app.get("//audit", async (c) => {
   try {
     const user = await verifyAuth(c.req.header('Authorization'));
     if (!user) {
@@ -795,7 +795,7 @@ app.get("/server/audit", async (c) => {
 });
 
 // Create audit entry
-app.post("/server/audit", async (c) => {
+app.post("//audit", async (c) => {
   try {
     const user = await verifyAuth(c.req.header('Authorization'));
     if (!user) {
@@ -818,7 +818,7 @@ app.post("/server/audit", async (c) => {
 // DOCUMENTATION ROUTES
 // ============================================
 
-app.post("/server/docs/generate", async (c) => {
+app.post("//docs/generate", async (c) => {
   try {
     const user = await verifyAuth(c.req.header('Authorization'));
     if (!user) {
@@ -985,7 +985,7 @@ app.post("/server/docs/generate", async (c) => {
   }
 });
 
-app.get("/server/docs/jobs/:jobId", async (c) => {
+app.get("//docs/jobs/:jobId", async (c) => {
   try {
     const user = await verifyAuth(c.req.header('Authorization'));
     if (!user) {
@@ -1017,7 +1017,7 @@ app.get("/server/docs/jobs/:jobId", async (c) => {
 // ============================================
 
 // Check if current user is admin
-app.get("/server/admin/check", async (c) => {
+app.get("//admin/check", async (c) => {
   try {
     const user = await verifyAuth(c.req.header('Authorization'));
     if (!user) {
@@ -1034,7 +1034,7 @@ app.get("/server/admin/check", async (c) => {
 });
 
 // Get team members list (authenticated users only)
-app.get("/server/team-members", async (c) => {
+app.get("//team-members", async (c) => {
   try {
     // Verify user is authenticated
     const accessToken = c.req.header('Authorization')?.split(' ')[1];
@@ -1067,7 +1067,7 @@ app.get("/server/team-members", async (c) => {
 });
 
 // List all users (admin only)
-app.get("/server/admin/users", async (c) => {
+app.get("//admin/users", async (c) => {
   try {
     const user = await verifyAdmin(c.req.header('Authorization'));
     if (!user) {
@@ -1100,7 +1100,7 @@ app.get("/server/admin/users", async (c) => {
 });
 
 // Delete user (admin only)
-app.delete("/server/admin/users/:userId", async (c) => {
+app.delete("//admin/users/:userId", async (c) => {
   try {
     const user = await verifyAdmin(c.req.header('Authorization'));
     if (!user) {
@@ -1130,7 +1130,7 @@ app.delete("/server/admin/users/:userId", async (c) => {
 });
 
 // Delete all users (admin only) - WARNING: DESTRUCTIVE
-app.delete("/server/admin/users", async (c) => {
+app.delete("//admin/users", async (c) => {
   try {
     const user = await verifyAdmin(c.req.header('Authorization'));
     if (!user) {
@@ -1180,7 +1180,7 @@ app.delete("/server/admin/users", async (c) => {
 });
 
 // Make user an admin (admin only)
-app.post("/server/admin/users/:userId/make-admin", async (c) => {
+app.post("//admin/users/:userId/make-admin", async (c) => {
   try {
     const user = await verifyAdmin(c.req.header('Authorization'));
     if (!user) {
@@ -1224,7 +1224,7 @@ app.post("/server/admin/users/:userId/make-admin", async (c) => {
 });
 
 // Remove admin from user (admin only)
-app.post("/server/admin/users/:userId/remove-admin", async (c) => {
+app.post("//admin/users/:userId/remove-admin", async (c) => {
   try {
     const user = await verifyAdmin(c.req.header('Authorization'));
     if (!user) {
@@ -1277,7 +1277,7 @@ app.post("/server/admin/users/:userId/remove-admin", async (c) => {
 // ============================================
 
 // Delete current user's own account
-app.delete("/server/delete-my-account", async (c) => {
+app.delete("//delete-my-account", async (c) => {
   try {
     const user = await verifyAuth(c.req.header('Authorization'));
     if (!user) {
@@ -1306,7 +1306,7 @@ app.delete("/server/delete-my-account", async (c) => {
 // ============================================
 
 // Initialize with default data (one-time setup)
-app.post("/server/initialize", async (c) => {
+app.post("//initialize", async (c) => {
   try {
     const user = await verifyAuth(c.req.header('Authorization'));
     if (!user) {
@@ -1353,7 +1353,7 @@ async function fetchAtlassian(url: string, email: string, token: string, options
 }
 
 // Get Atlassian configuration
-app.get("/server/atlassian/config", async (c) => {
+app.get("//atlassian/config", async (c) => {
   try {
     const user = await verifyAuth(c.req.header('Authorization'));
     if (!user) {
@@ -1374,7 +1374,7 @@ app.get("/server/atlassian/config", async (c) => {
 });
 
 // Save Jira configuration
-app.post("/server/atlassian/jira/config", async (c) => {
+app.post("//atlassian/jira/config", async (c) => {
   try {
     const user = await verifyAuth(c.req.header('Authorization'));
     if (!user) {
@@ -1415,7 +1415,7 @@ app.post("/server/atlassian/jira/config", async (c) => {
 });
 
 // Save Confluence configuration
-app.post("/server/atlassian/confluence/config", async (c) => {
+app.post("//atlassian/confluence/config", async (c) => {
   try {
     const user = await verifyAuth(c.req.header('Authorization'));
     if (!user) {
@@ -1456,7 +1456,7 @@ app.post("/server/atlassian/confluence/config", async (c) => {
 });
 
 // Test Jira connection
-app.get("/server/atlassian/jira/test", async (c) => {
+app.get("//atlassian/jira/test", async (c) => {
   try {
     const user = await verifyAuth(c.req.header('Authorization'));
     if (!user) {
@@ -1487,7 +1487,7 @@ app.get("/server/atlassian/jira/test", async (c) => {
 });
 
 // Test Confluence connection
-app.get("/server/atlassian/confluence/test", async (c) => {
+app.get("//atlassian/confluence/test", async (c) => {
   try {
     const user = await verifyAuth(c.req.header('Authorization'));
     if (!user) {
@@ -1518,7 +1518,7 @@ app.get("/server/atlassian/confluence/test", async (c) => {
 });
 
 // Disconnect Jira
-app.delete("/server/atlassian/jira/disconnect", async (c) => {
+app.delete("//atlassian/jira/disconnect", async (c) => {
   try {
     const user = await verifyAuth(c.req.header('Authorization'));
     if (!user) {
@@ -1534,7 +1534,7 @@ app.delete("/server/atlassian/jira/disconnect", async (c) => {
 });
 
 // Disconnect Confluence
-app.delete("/server/atlassian/confluence/disconnect", async (c) => {
+app.delete("//atlassian/confluence/disconnect", async (c) => {
   try {
     const user = await verifyAuth(c.req.header('Authorization'));
     if (!user) {
@@ -1550,7 +1550,7 @@ app.delete("/server/atlassian/confluence/disconnect", async (c) => {
 });
 
 // Get Jira projects
-app.get("/server/atlassian/jira/projects", async (c) => {
+app.get("//atlassian/jira/projects", async (c) => {
   try {
     const user = await verifyAuth(c.req.header('Authorization'));
     if (!user) {
@@ -1581,7 +1581,7 @@ app.get("/server/atlassian/jira/projects", async (c) => {
 });
 
 // Link project to Jira
-app.post("/server/atlassian/jira/link", async (c) => {
+app.post("//atlassian/jira/link", async (c) => {
   try {
     const user = await verifyAuth(c.req.header('Authorization'));
     if (!user) {
@@ -1619,7 +1619,7 @@ app.post("/server/atlassian/jira/link", async (c) => {
 });
 
 // Create Jira issue
-app.post("/server/atlassian/jira/create-issue", async (c) => {
+app.post("//atlassian/jira/create-issue", async (c) => {
   try {
     const user = await verifyAuth(c.req.header('Authorization'));
     if (!user) {
@@ -1698,7 +1698,7 @@ app.post("/server/atlassian/jira/create-issue", async (c) => {
 });
 
 // Get Confluence spaces
-app.get("/server/atlassian/confluence/spaces", async (c) => {
+app.get("//atlassian/confluence/spaces", async (c) => {
   try {
     const user = await verifyAuth(c.req.header('Authorization'));
     if (!user) {
@@ -1729,7 +1729,7 @@ app.get("/server/atlassian/confluence/spaces", async (c) => {
 });
 
 // Link project to Confluence
-app.post("/server/atlassian/confluence/link", async (c) => {
+app.post("//atlassian/confluence/link", async (c) => {
   try {
     const user = await verifyAuth(c.req.header('Authorization'));
     if (!user) {

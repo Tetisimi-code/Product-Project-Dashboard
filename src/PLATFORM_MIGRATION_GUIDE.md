@@ -48,7 +48,7 @@ vercel
 **Environment Variables in Vercel:**
 ```bash
 # If keeping Supabase backend
-VITE_API_URL=https://YOUR_PROJECT.supabase.co/functions/v1/make-server-bbcbebd7
+VITE_API_URL=https://YOUR_PROJECT.supabase.co/functions/v1/server
 VITE_API_KEY=your_supabase_anon_key
 
 # If using custom backend

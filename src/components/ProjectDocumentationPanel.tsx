@@ -212,19 +212,7 @@ Actions:
             </Button>
           </div>
 
-          {(project as any).documentationUrl && (
-            <div className="pt-4 border-t">
-              <div className="text-sm text-slate-600 mb-2">External Documentation:</div>
-              <a
-                href={(project as any).documentationUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-purple-600 hover:underline text-sm break-all"
-              >
-                {(project as any).documentationUrl}
-              </a>
-            </div>
-          )}
+          
         </div>
       </DialogContent>
     </Dialog>

@@ -872,7 +872,7 @@ You now have:
 ┌──────────────────────────────────────────────────────┐
 │  SUPABASE EDGE FUNCTIONS                             │
 │  https://PROJECT_ID.supabase.co/functions/v1/        │
-│  make-server-bbcbebd7/*                              │
+│  server/*                              │
 │  • Deno runtime                                      │
 │  • Hono web framework                                │
 │  • Handles all backend logic                         │

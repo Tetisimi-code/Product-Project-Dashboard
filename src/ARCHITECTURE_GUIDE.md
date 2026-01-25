@@ -223,7 +223,7 @@ App.tsx: handleAddProject(project)
     │
     ├──► API: api.createProject(project)
     │       │
-    │       └──► Server: POST /make-server-bbcbebd7/projects
+    │       └──► Server: POST /server/projects
     │               │
     │               └──► Database: kv.set('projects', [...])
     │                       │
@@ -468,7 +468,7 @@ App.tsx: handleAddProject(project)
 │                                                              │
 │  HTTPS Request                                               │
 │  GET https://abc123.supabase.co/functions/v1/               │
-│      make-server-bbcbebd7/projects                           │
+│      server/projects                           │
 │                                                              │
 │  Headers:                                                    │
 │    Authorization: Bearer eyJhbGci...                         │
@@ -482,7 +482,7 @@ App.tsx: handleAddProject(project)
 │  1. Request received by Hono server                          │
 │  2. CORS middleware adds headers                             │
 │  3. Logger middleware logs request                           │
-│  4. Route matched: app.get('/make-server-bbcbebd7/projects') │
+│  4. Route matched: app.get('/server/projects') │
 └───────────────────────┬─────────────────────────────────────┘
                         ▼
 ┌─────────────────────────────────────────────────────────────┐
@@ -503,7 +503,7 @@ App.tsx: handleAddProject(project)
 ┌─────────────────────────────────────────────────────────────┐
 │  BUSINESS LOGIC                                              │
 │                                                              │
-│  app.get('/make-server-bbcbebd7/projects', async (c) => {   │
+│  app.get('/server/projects', async (c) => {   │
 │    // Get data from KV store                                │
 │    const projects = await kv.get('projects');               │
 │                                                              │
@@ -849,7 +849,7 @@ export async function updateProject(id, data) {
 **6. Trace to Backend**
 ```typescript
 // supabase/functions/server/index.tsx
-app.put('/make-server-bbcbebd7/projects/:id', async (c) => {
+app.put('/server/projects/:id', async (c) => {
   const id = c.req.param('id');
   const data = await c.req.json();
   

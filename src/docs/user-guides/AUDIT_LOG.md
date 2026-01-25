@@ -164,7 +164,7 @@ All CRUD operations automatically create audit entries:
 ### Cloud Storage
 
 - Stored in Supabase KV store under `auditLog` key
-- Accessible via API: `GET /make-server-bbcbebd7/auditLog`
+- Accessible via API: `GET /server/auditLog`
 - Protected by authentication
 - Shared across all users
 

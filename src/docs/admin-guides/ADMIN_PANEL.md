@@ -216,7 +216,7 @@ This shouldn't happen. If it does:
 
 **List Users:**
 ```
-GET /make-server-bbcbebd7/admin/users
+GET /server/admin/users
 Authorization: Bearer {accessToken}
 ```
 
@@ -224,7 +224,7 @@ Returns all user accounts with metadata.
 
 **Delete User:**
 ```
-DELETE /make-server-bbcbebd7/admin/users/:userId
+DELETE /server/admin/users/:userId
 Authorization: Bearer {accessToken}
 ```
 
@@ -232,7 +232,7 @@ Permanently removes a user account.
 
 **Grant Admin:**
 ```
-POST /make-server-bbcbebd7/admin/grant-admin
+POST /server/admin/grant-admin
 Authorization: Bearer {accessToken}
 Body: { userId: string }
 ```
@@ -241,7 +241,7 @@ Grants admin privileges to a user.
 
 **Revoke Admin:**
 ```
-POST /make-server-bbcbebd7/admin/revoke-admin
+POST /server/admin/revoke-admin
 Authorization: Bearer {accessToken}
 Body: { userId: string }
 ```

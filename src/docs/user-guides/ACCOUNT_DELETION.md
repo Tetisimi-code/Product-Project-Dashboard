@@ -186,7 +186,7 @@ Currently, users can delete their own accounts by design (user autonomy and priv
 
 ### API Endpoint
 
-**Endpoint:** `DELETE /make-server-bbcbebd7/delete-my-account`
+**Endpoint:** `DELETE /server/delete-my-account`
 
 **Authentication:** Required (Bearer token)
 

@@ -2,8 +2,7 @@ import { projectId, publicAnonKey } from './supabase/info';
 import { supabase } from './supabase/client';
 
 // Use VITE_API_URL if available, otherwise fall back to default
-const API_URL = import.meta.env.VITE_API_URL || `https://${projectId}.supabase.co/functions/v1/make-server-bbcbebd7`;
-const REQUEST_TIMEOUT = 30000; // 30 seconds
+const API_URL = import.meta.env.VITE_API_URL || `https://${projectId}.supabase.co/functions/v1/server`;const REQUEST_TIMEOUT = 30000; // 30 seconds
 
 // Log API configuration on startup
 console.log('API Configuration:', {
