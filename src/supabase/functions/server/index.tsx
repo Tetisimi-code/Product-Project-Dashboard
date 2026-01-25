@@ -12,6 +12,11 @@ const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+// Documentation service configuration
+const DOC_SERVICE_URL = Deno.env.get('DOC_SERVICE_URL') || 'http://localhost:8000';
+const DOC_TEMPLATE_URL = Deno.env.get('DOC_TEMPLATE_URL') || '';
+const DOC_SIGNED_URL_TTL = Number(Deno.env.get('DOC_SIGNED_URL_TTL') || '3600');
+
 // Enable logger
 app.use('*', logger(console.log));
 
@@ -51,6 +56,28 @@ const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
 
 // NOTE: Email verification functions disabled - no longer sending verification emails
 // Users are auto-verified on signup
+
+const hashString = async (value: string): Promise<string> => {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(value);
+  const digest = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('');
+};
+
+const checkUrlReachable = async (url: string): Promise<boolean> => {
+  try {
+    const headResponse = await fetch(url, { method: 'HEAD' });
+    if (headResponse.ok) {
+      return true;
+    }
+    const getResponse = await fetch(url);
+    return getResponse.ok;
+  } catch {
+    return false;
+  }
+};
 
 /* DISABLED - Email verification removed
 // Helper function to generate 6-digit verification code
@@ -784,6 +811,204 @@ app.post("/make-server-bbcbebd7/audit", async (c) => {
   } catch (error) {
     console.log(`Error creating audit entry: ${error}`);
     return c.json({ error: "Failed to create audit entry" }, 500);
+  }
+});
+
+// ============================================
+// DOCUMENTATION ROUTES
+// ============================================
+
+app.post("/make-server-bbcbebd7/docs/generate", async (c) => {
+  try {
+    const user = await verifyAuth(c.req.header('Authorization'));
+    if (!user) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const { projectId, idempotencyKey, templateUrl } = await c.req.json();
+    if (!projectId) {
+      return c.json({ error: 'projectId is required' }, 400);
+    }
+
+    const effectiveTemplateUrl = templateUrl || DOC_TEMPLATE_URL;
+    if (!effectiveTemplateUrl) {
+      return c.json({ error: 'templateUrl is required' }, 500);
+    }
+
+    const projects = await kv.get('projects') || [];
+    const project = projects.find((p: any) => p.id === projectId);
+    if (!project) {
+      return c.json({ error: 'Project not found' }, 404);
+    }
+
+    const productIds = (project.featuresUsed || []).filter((id: string) => Boolean(id));
+    if (productIds.length === 0) {
+      return c.json({ error: 'No products configured for this project' }, 400);
+    }
+
+    const { data: productRows, error: productError } = await supabase
+      .from('product_catalog')
+      .select('product_id,manual_url,display_order')
+      .in('product_id', productIds)
+      .order('display_order', { ascending: true });
+
+    if (productError) {
+      return c.json({ error: productError.message }, 500);
+    }
+
+    const manualUrls = (productRows || [])
+      .filter((row) => row.manual_url)
+      .map((row) => row.manual_url);
+
+    const missingProducts = productIds.filter((id: string) => (
+      !(productRows || []).some((row) => row.product_id === id && row.manual_url)
+    ));
+    if (missingProducts.length > 0) {
+      return c.json({ error: `Missing manual URLs for products: ${missingProducts.join(', ')}` }, 400);
+    }
+
+    const templateReachable = await checkUrlReachable(effectiveTemplateUrl);
+    if (!templateReachable) {
+      return c.json({ error: 'Template URL is not reachable' }, 400);
+    }
+
+    const unreachableManuals: string[] = [];
+    for (const manualUrl of manualUrls) {
+      const reachable = await checkUrlReachable(manualUrl);
+      if (!reachable) {
+        unreachableManuals.push(manualUrl);
+      }
+    }
+    if (unreachableManuals.length > 0) {
+      return c.json({
+        error: 'One or more manual URLs are not reachable',
+        details: unreachableManuals,
+      }, 400);
+    }
+
+    const fallbackKey = await hashString(JSON.stringify({
+      projectId,
+      templateUrl: effectiveTemplateUrl,
+      products: productIds,
+      manuals: manualUrls,
+    }));
+    const resolvedIdempotencyKey = idempotencyKey || fallbackKey;
+    const idempotencyMapKey = `doc_idempotency_${resolvedIdempotencyKey}`;
+    const existingJobId = await kv.get(idempotencyMapKey);
+    if (existingJobId) {
+      const existingJob = await kv.get(`doc_job_${existingJobId}`);
+      if (existingJob && existingJob.status !== 'failed') {
+        return c.json({ jobId: existingJobId });
+      }
+    }
+
+    const jobId = crypto.randomUUID();
+    const jobKey = `doc_job_${jobId}`;
+    await kv.set(jobKey, {
+      jobId,
+      projectId,
+      status: 'pending',
+      templateUrl: effectiveTemplateUrl,
+      manualUrls,
+      idempotencyKey: resolvedIdempotencyKey,
+      createdAt: new Date().toISOString(),
+    });
+    await kv.set(idempotencyMapKey, jobId);
+
+    c.executionCtx?.waitUntil((async () => {
+      try {
+        await kv.set(jobKey, {
+          jobId,
+          projectId,
+          status: 'processing',
+          updatedAt: new Date().toISOString(),
+        });
+
+        const payload = {
+          job_id: jobId,
+          template_url: effectiveTemplateUrl,
+          module_urls: manualUrls,
+        };
+
+        const response = await fetch(`${DOC_SERVICE_URL}/merge`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          const message = await response.text();
+          await kv.set(jobKey, {
+            jobId,
+            projectId,
+            status: 'failed',
+            error: message || 'Doc service error',
+            updatedAt: new Date().toISOString(),
+          });
+          return;
+        }
+
+        const result = await response.json();
+        const output = result.output;
+        if (!output?.bucket || !output?.path) {
+          await kv.set(jobKey, {
+            jobId,
+            projectId,
+            status: 'failed',
+            error: 'Doc service returned no output location',
+            updatedAt: new Date().toISOString(),
+          });
+          return;
+        }
+
+        await kv.set(jobKey, {
+          jobId,
+          projectId,
+          status: 'completed',
+          output,
+          updatedAt: new Date().toISOString(),
+        });
+      } catch (error) {
+        await kv.set(jobKey, {
+          jobId,
+          projectId,
+          status: 'failed',
+          error: (error as Error).message,
+          updatedAt: new Date().toISOString(),
+        });
+      }
+    })());
+
+    return c.json({ jobId });
+  } catch (error) {
+    return c.json({ error: (error as Error).message }, 500);
+  }
+});
+
+app.get("/make-server-bbcbebd7/docs/jobs/:jobId", async (c) => {
+  try {
+    const user = await verifyAuth(c.req.header('Authorization'));
+    if (!user) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const jobId = c.req.param('jobId');
+    const job = await kv.get(`doc_job_${jobId}`);
+    if (!job) {
+      return c.json({ error: 'Job not found' }, 404);
+    }
+    if (job.status === 'completed' && job.output?.bucket && job.output?.path) {
+      const signed = await supabase
+        .storage
+        .from(job.output.bucket)
+        .createSignedUrl(job.output.path, DOC_SIGNED_URL_TTL);
+      if (!signed.error && signed.data?.signedUrl) {
+        return c.json({ job: { ...job, downloadUrl: signed.data.signedUrl } });
+      }
+    }
+    return c.json({ job });
+  } catch (error) {
+    return c.json({ error: (error as Error).message }, 500);
   }
 });
 

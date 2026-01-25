@@ -242,6 +242,21 @@ export async function createAuditEntry(entry: any) {
 }
 
 // ============================================
+// DOCUMENTATION API
+// ============================================
+
+export async function generateUserManual(projectId: string, idempotencyKey?: string) {
+  return fetchWithAuth<{ jobId: string }>('/docs/generate', {
+    method: 'POST',
+    body: JSON.stringify({ projectId, idempotencyKey }),
+  });
+}
+
+export async function getDocumentationJob(jobId: string) {
+  return fetchWithAuth<{ job: any }>(`/docs/jobs/${jobId}`);
+}
+
+// ============================================
 // INITIALIZATION API
 // ============================================
 

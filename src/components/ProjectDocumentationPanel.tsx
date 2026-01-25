@@ -4,6 +4,7 @@ import { Button } from './ui/button';
 import { FileText, Copy, Check, FileUp, BookOpen } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner@2.0.3';
+import * as api from '../utils/api';
 
 interface ProjectDocumentationPanelProps {
   open: boolean;
@@ -46,22 +47,60 @@ Actions:
   const handleGenerateManual = async () => {
     setIsGenerating(true);
     try {
-      const manualUrl = '/docs/output/user-manual.docx';
-      const response = await fetch(manualUrl);
+      const idempotencyKey = `${project.id}:${project.featuresUsed.join(',')}`;
+      const startResult = await api.generateUserManual(project.id, idempotencyKey);
+      if (startResult.error || !startResult.data?.jobId) {
+        throw new Error(startResult.error || 'Manual generation failed');
+      }
 
+      const jobId = startResult.data.jobId;
+      const maxAttempts = 30;
+      const pollDelayMs = 2000;
+      let attempt = 0;
+      let jobStatus = 'pending';
+      let downloadUrl = '';
+
+      while (attempt < maxAttempts) {
+        const jobResult = await api.getDocumentationJob(jobId);
+        if (jobResult.error) {
+          throw new Error(jobResult.error);
+        }
+        const job = jobResult.data?.job;
+        if (!job) {
+          throw new Error('Job status unavailable');
+        }
+
+        jobStatus = job.status;
+        if (jobStatus === 'completed') {
+          downloadUrl = job.downloadUrl;
+          break;
+        }
+        if (jobStatus === 'failed') {
+          throw new Error(job.error || 'Manual generation failed');
+        }
+
+        attempt += 1;
+        await new Promise(resolve => setTimeout(resolve, pollDelayMs));
+      }
+
+      if (!downloadUrl) {
+        throw new Error('Manual generation timed out');
+      }
+
+      const response = await fetch(downloadUrl);
       if (!response.ok) {
-        throw new Error('Manual not found. Run the assembler to generate it.');
+        throw new Error('Download link unavailable');
       }
 
       const blob = await response.blob();
-      const downloadUrl = window.URL.createObjectURL(blob);
+      const objectUrl = window.URL.createObjectURL(blob);
       const anchor = document.createElement('a');
-      anchor.href = downloadUrl;
+      anchor.href = objectUrl;
       anchor.download = `${project.name.replace(/[^a-z0-9-_]+/gi, '-')}-user-manual.docx`;
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();
-      window.URL.revokeObjectURL(downloadUrl);
+      window.URL.revokeObjectURL(objectUrl);
 
       toast.success('User manual downloaded', { description: project.name });
     } catch (error) {
