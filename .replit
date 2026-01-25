@@ -43,4 +43,4 @@ externalPort = 3000
 run = ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port $PORT"]
 deploymentTarget = "static"
 build = ["npm", "run", "build"]
-publicDir = "dist"
+publicDir = "build"
