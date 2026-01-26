@@ -1186,7 +1186,7 @@ app.post("/server/docs/generate", async (c) => {
     });
     await kv.set(idempotencyMapKey, jobId);
 
-    c.executionCtx?.waitUntil((async () => {
+    const runJob = async () => {
       try {
         await kv.set(jobKey, {
           jobId,
@@ -1248,7 +1248,13 @@ app.post("/server/docs/generate", async (c) => {
           updatedAt: new Date().toISOString(),
         });
       }
-    })());
+    };
+
+    if (c.executionCtx?.waitUntil) {
+      c.executionCtx.waitUntil(runJob());
+    } else {
+      await runJob();
+    }
 
     return c.json({ jobId });
   } catch (error) {
