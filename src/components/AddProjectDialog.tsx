@@ -6,16 +6,17 @@ import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Checkbox } from './ui/checkbox';
-import { ProductFeature, Project } from '../App';
+import { ProductCatalog, ProductFeature, Project } from '../App';
 
 interface AddProjectDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  products: ProductCatalog[];
   features: ProductFeature[];
   onAdd: (project: Project) => void;
 }
 
-export function AddProjectDialog({ open, onOpenChange, features, onAdd }: AddProjectDialogProps) {
+export function AddProjectDialog({ open, onOpenChange, products, features, onAdd }: AddProjectDialogProps) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [status, setStatus] = useState<Project['status']>('planning');
@@ -61,12 +62,17 @@ export function AddProjectDialog({ open, onOpenChange, features, onAdd }: AddPro
     );
   };
 
-  // Group features by category
-  const featuresByCategory = features.reduce((acc, feature) => {
-    if (!acc[feature.category]) {
-      acc[feature.category] = [];
+  const sortedProducts = [...products].sort((a, b) => {
+    const orderA = a.displayOrder ?? Number.MAX_SAFE_INTEGER;
+    const orderB = b.displayOrder ?? Number.MAX_SAFE_INTEGER;
+    if (orderA !== orderB) return orderA - orderB;
+    return a.name.localeCompare(b.name);
+  });
+  const featuresByProduct = features.reduce((acc, feature) => {
+    if (!acc[feature.productId]) {
+      acc[feature.productId] = [];
     }
-    acc[feature.category].push(feature);
+    acc[feature.productId].push(feature);
     return acc;
   }, {} as Record<string, ProductFeature[]>);
 
@@ -163,31 +169,47 @@ export function AddProjectDialog({ open, onOpenChange, features, onAdd }: AddPro
           <div className="space-y-2">
             <Label>Features Used</Label>
             <div className="border rounded-lg p-4 max-h-64 overflow-y-auto">
-              {Object.entries(featuresByCategory).map(([category, categoryFeatures]) => (
-                <div key={category} className="mb-4 last:mb-0">
-                  <h4 className="text-slate-700 mb-2">{category}</h4>
-                  <div className="space-y-2">
-                    {categoryFeatures.map(feature => (
-                      <div key={feature.id} className="flex items-start gap-2">
-                        <Checkbox
-                          id={feature.id}
-                          checked={selectedFeatures.includes(feature.id)}
-                          onCheckedChange={() => toggleFeature(feature.id)}
-                        />
-                        <div className="flex-1">
-                          <Label
-                            htmlFor={feature.id}
-                            className="cursor-pointer"
-                          >
-                            {feature.name}
-                          </Label>
-                          <p className="text-slate-600">{feature.description}</p>
-                        </div>
+              <div className="space-y-4">
+                {sortedProducts.map((product) => {
+                  const productFeatures = (featuresByProduct[product.id] || []).sort((a, b) => {
+                    const orderA = a.displayOrder ?? Number.MAX_SAFE_INTEGER;
+                    const orderB = b.displayOrder ?? Number.MAX_SAFE_INTEGER;
+                    if (orderA !== orderB) return orderA - orderB;
+                    return a.name.localeCompare(b.name);
+                  });
+
+                  if (productFeatures.length === 0) return null;
+
+                  return (
+                    <div key={product.id} className="space-y-2">
+                      <div>
+                        <h4 className="text-slate-800">{product.name}</h4>
+                        <p className="text-slate-500 text-sm">{product.description}</p>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
+                      <div className="space-y-2">
+                        {productFeatures.map((feature) => (
+                          <div key={feature.id} className="flex items-start gap-2">
+                            <Checkbox
+                              id={feature.id}
+                              checked={selectedFeatures.includes(feature.id)}
+                              onCheckedChange={() => toggleFeature(feature.id)}
+                            />
+                            <div className="flex-1">
+                              <Label
+                                htmlFor={feature.id}
+                                className="cursor-pointer"
+                              >
+                                {feature.name}
+                              </Label>
+                              <p className="text-slate-600">{feature.description}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
 

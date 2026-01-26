@@ -1,41 +1,48 @@
-import { ProductFeature, Project } from '../App';
+import { ProductCatalog, ProductFeature, Project } from '../App';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { ScrollArea } from './ui/scroll-area';
 import { ProjectCard } from './ProjectCard';
-import { Button } from './ui/button';
-import { ChevronUp, ChevronDown } from 'lucide-react';
 import { TeamMember } from '../utils/api';
 
 interface ProductProjectBoardProps {
+  products: ProductCatalog[];
   features: ProductFeature[];
   projects: Project[];
-  categoryOrder: string[];
   currentUser: any;
   teamMembers: TeamMember[];
   onUpdateProject: (project: Project) => void;
   onDeleteProject: (projectId: string) => void;
-  onReorderCategory: (category: string, direction: 'up' | 'down') => void;
   onOpenAtlassianSettings?: () => void;
 }
 
-export function ProductProjectBoard({ features, projects, categoryOrder, currentUser, teamMembers, onUpdateProject, onDeleteProject, onReorderCategory, onOpenAtlassianSettings }: ProductProjectBoardProps) {
-  // Group features by category
-  const featuresByCategory = features.reduce((acc, feature) => {
-    if (!acc[feature.category]) {
-      acc[feature.category] = [];
+export function ProductProjectBoard({ products, features, projects, currentUser, teamMembers, onUpdateProject, onDeleteProject, onOpenAtlassianSettings }: ProductProjectBoardProps) {
+  const sortedProducts = [...products].sort((a, b) => {
+    const orderA = a.displayOrder ?? Number.MAX_SAFE_INTEGER;
+    const orderB = b.displayOrder ?? Number.MAX_SAFE_INTEGER;
+    if (orderA !== orderB) return orderA - orderB;
+    return a.name.localeCompare(b.name);
+  });
+  const featuresByProduct = features.reduce((acc, feature) => {
+    if (!acc[feature.productId]) {
+      acc[feature.productId] = [];
     }
-    acc[feature.category].push(feature);
+    acc[feature.productId].push(feature);
     return acc;
   }, {} as Record<string, ProductFeature[]>);
+  const sortedFeaturesForProduct = (productId: string) => {
+    return (featuresByProduct[productId] || []).sort((a, b) => {
+      const orderA = a.displayOrder ?? Number.MAX_SAFE_INTEGER;
+      const orderB = b.displayOrder ?? Number.MAX_SAFE_INTEGER;
+      if (orderA !== orderB) return orderA - orderB;
+      return a.name.localeCompare(b.name);
+    });
+  };
 
   // Get projects using a specific feature
   const getProjectsUsingFeature = (featureId: string) => {
     return projects.filter(p => p.featuresUsed.includes(featureId));
   };
-
-  // Sort categories according to categoryOrder
-  const sortedCategories = categoryOrder.filter(cat => featuresByCategory[cat]);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
@@ -48,40 +55,18 @@ export function ProductProjectBoard({ features, projects, categoryOrder, current
           <CardContent>
             <ScrollArea className="h-[500px] md:h-[700px] xl:h-[800px]">
               <div className="space-y-4">
-                {sortedCategories.map((category, index) => {
-                  const categoryFeatures = featuresByCategory[category];
-                  const canMoveUp = index > 0;
-                  const canMoveDown = index < sortedCategories.length - 1;
-                  
+                {sortedProducts.map(product => {
+                  const productFeatures = sortedFeaturesForProduct(product.id);
+                  if (productFeatures.length === 0) return null;
+
                   return (
-                    <div key={category}>
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-slate-700">{category}</h3>
-                        <div className="flex gap-0.5">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-6 p-0"
-                            onClick={() => onReorderCategory(category, 'up')}
-                            disabled={!canMoveUp}
-                          >
-                            <ChevronUp className="size-4" />
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-6 p-0"
-                            onClick={() => onReorderCategory(category, 'down')}
-                            disabled={!canMoveDown}
-                          >
-                            <ChevronDown className="size-4" />
-                          </Button>
-                        </div>
+                    <div key={product.id} className="space-y-2">
+                      <div>
+                        <div className="text-slate-900 font-medium">{product.name}</div>
+                        <p className="text-slate-600 text-sm">{product.description}</p>
                       </div>
                       <div className="space-y-2">
-                        {categoryFeatures.map(feature => {
+                        {productFeatures.map(feature => {
                           const projectsUsing = getProjectsUsingFeature(feature.id);
                           return (
                             <div
@@ -123,6 +108,7 @@ export function ProductProjectBoard({ features, projects, categoryOrder, current
                   <ProjectCard
                     key={project.id}
                     project={project}
+                    products={products}
                     features={features}
                     currentUser={currentUser}
                     teamMembers={teamMembers}

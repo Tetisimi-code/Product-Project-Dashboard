@@ -30,9 +30,18 @@ import * as api from './utils/api';
 
 export interface ProductFeature {
   id: string;
+  productId: string;
   name: string;
-  category: string;
   description: string;
+  displayOrder?: number | null;
+}
+
+export interface ProductCatalog {
+  id: string;
+  name: string;
+  description: string;
+  manualUrl?: string | null;
+  displayOrder?: number | null;
 }
 
 export interface DeploymentNote {
@@ -67,15 +76,199 @@ export interface Project {
   location?: string; // Optional: City, Country or Region
 }
 
+const mockProducts: ProductCatalog[] = [
+  {
+    id: 'frequency_and_rocof',
+    name: 'Frequency and ROCOF',
+    description: 'Visualize frequency and ROCOF',
+    manualUrl: 'https://cdjrrnbihbkzmmaccslj.supabase.co/storage/v1/object/public/product-manuals/frequency-and-rocof-manual.docx',
+    displayOrder: 1,
+  },
+  {
+    id: 'spot_inertia_event_analysis',
+    name: 'Event analysis',
+    description: 'Spot inertia with event analysis',
+    manualUrl: 'https://cdjrrnbihbkzmmaccslj.supabase.co/storage/v1/object/public/product-manuals/event-analysis-manual.docx',
+    displayOrder: 2,
+  },
+  {
+    id: 'oscillations',
+    name: 'Oscillations',
+    description: 'Oscillation Events',
+    manualUrl: 'https://cdjrrnbihbkzmmaccslj.supabase.co/storage/v1/object/public/product-manuals/oscillations-manual.docx',
+    displayOrder: 3,
+  },
+  {
+    id: 'measurement',
+    name: 'Measurement',
+    description: 'Cloud-based file management',
+    manualUrl: 'https://cdjrrnbihbkzmmaccslj.supabase.co/storage/v1/object/public/product-manuals/measurement-manual.docx',
+    displayOrder: 4,
+  },
+  {
+    id: 'inertia_monitoring',
+    name: 'Monitoring',
+    description: 'Inertia monitoring',
+    manualUrl: 'https://cdjrrnbihbkzmmaccslj.supabase.co/storage/v1/object/public/product-manuals/monitoring-manual.docx',
+    displayOrder: 5,
+  },
+  {
+    id: 'passive_system_strength',
+    name: 'Passive System Strength',
+    description: 'Passive events',
+    manualUrl: 'https://cdjrrnbihbkzmmaccslj.supabase.co/storage/v1/object/public/product-manuals/passive-system-strength-manual.docx',
+    displayOrder: 6,
+  },
+  {
+    id: 'active_system_strength',
+    name: 'Active System Strength',
+    description: 'Active Events',
+    manualUrl: 'https://cdjrrnbihbkzmmaccslj.supabase.co/storage/v1/object/public/product-manuals/active-system-strength-manual.docx',
+    displayOrder: 7,
+  },
+  {
+    id: 'voltage',
+    name: 'voltage',
+    description: 'Displays system voltage',
+    manualUrl: 'https://cdjrrnbihbkzmmaccslj.supabase.co/storage/v1/object/public/product-manuals/voltage-manual.docx',
+    displayOrder: 8,
+  },
+  {
+    id: 'instantaneous_flicker_and_voltage',
+    name: 'Instantaneous Flicker and Voltage',
+    description: 'Instantaneous Flicker and Voltage',
+    manualUrl: 'https://cdjrrnbihbkzmmaccslj.supabase.co/storage/v1/object/public/product-manuals/instantaneous-flicker-and-voltage-manual.docx',
+    displayOrder: 9,
+  },
+];
+
 const mockProductFeatures: ProductFeature[] = [
-  { id: 'f1', name: 'User Authentication', category: 'Security', description: 'SSO and multi-factor authentication' },
-  { id: 'f2', name: 'Analytics Dashboard', category: 'Analytics', description: 'Real-time data visualization' },
-  { id: 'f3', name: 'API Gateway', category: 'Infrastructure', description: 'RESTful API management' },
-  { id: 'f4', name: 'Payment Processing', category: 'Commerce', description: 'Multiple payment providers integration' },
-  { id: 'f5', name: 'Notification System', category: 'Communication', description: 'Email, SMS, and push notifications' },
-  { id: 'f6', name: 'File Storage', category: 'Infrastructure', description: 'Cloud-based file management' },
-  { id: 'f7', name: 'Reporting Engine', category: 'Analytics', description: 'Custom report generation' },
-  { id: 'f8', name: 'User Management', category: 'Security', description: 'Role-based access control' },
+  {
+    id: 'frequency_events',
+    productId: 'frequency_and_rocof',
+    name: 'Frequency Events',
+    description: 'Detect and analyze frequency excursions.',
+    displayOrder: 1,
+  },
+  {
+    id: 'rocof_trends',
+    productId: 'frequency_and_rocof',
+    name: 'ROCOF Trends',
+    description: 'Track ROCOF patterns over time.',
+    displayOrder: 2,
+  },
+  {
+    id: 'event_detection',
+    productId: 'spot_inertia_event_analysis',
+    name: 'Event Detection',
+    description: 'Identify inertia events across assets.',
+    displayOrder: 1,
+  },
+  {
+    id: 'inertia_reports',
+    productId: 'spot_inertia_event_analysis',
+    name: 'Inertia Reports',
+    description: 'Generate event-based inertia reports.',
+    displayOrder: 2,
+  },
+  {
+    id: 'multimode_analysis',
+    productId: 'oscillations',
+    name: 'Multimode Analysis',
+    description: 'Separate and analyze multiple oscillation modes.',
+    displayOrder: 1,
+  },
+  {
+    id: 'oscillation_events',
+    productId: 'oscillations',
+    name: 'Oscillation Events',
+    description: 'Track oscillation events and trends.',
+    displayOrder: 2,
+  },
+  {
+    id: 'file_management',
+    productId: 'measurement',
+    name: 'File Management',
+    description: 'Manage and organize measurement files.',
+    displayOrder: 1,
+  },
+  {
+    id: 'data_ingest',
+    productId: 'measurement',
+    name: 'Data Ingest',
+    description: 'Ingest files into the measurement pipeline.',
+    displayOrder: 2,
+  },
+  {
+    id: 'monitoring_dashboard',
+    productId: 'inertia_monitoring',
+    name: 'Monitoring Dashboard',
+    description: 'Monitor inertia signals in real time.',
+    displayOrder: 1,
+  },
+  {
+    id: 'threshold_alerts',
+    productId: 'inertia_monitoring',
+    name: 'Threshold Alerts',
+    description: 'Configure alerts for inertia thresholds.',
+    displayOrder: 2,
+  },
+  {
+    id: 'passive_events',
+    productId: 'passive_system_strength',
+    name: 'Passive Events',
+    description: 'Analyze passive system strength events.',
+    displayOrder: 1,
+  },
+  {
+    id: 'strength_index',
+    productId: 'passive_system_strength',
+    name: 'Strength Index',
+    description: 'Summarize passive strength indicators.',
+    displayOrder: 2,
+  },
+  {
+    id: 'active_events',
+    productId: 'active_system_strength',
+    name: 'Active Events',
+    description: 'Simulate and review active events.',
+    displayOrder: 1,
+  },
+  {
+    id: 'stress_scenarios',
+    productId: 'active_system_strength',
+    name: 'Stress Scenarios',
+    description: 'Model strength under stress scenarios.',
+    displayOrder: 2,
+  },
+  {
+    id: 'voltage_overview',
+    productId: 'voltage',
+    name: 'Voltage Overview',
+    description: 'Review voltage behavior across assets.',
+    displayOrder: 1,
+  },
+  {
+    id: 'voltage_alerts',
+    productId: 'voltage',
+    name: 'Voltage Alerts',
+    description: 'Configure alerts for voltage excursions.',
+    displayOrder: 2,
+  },
+  {
+    id: 'flicker_insights',
+    productId: 'instantaneous_flicker_and_voltage',
+    name: 'Flicker Insights',
+    description: 'Analyze instantaneous flicker patterns.',
+    displayOrder: 1,
+  },
+  {
+    id: 'instant_voltage',
+    productId: 'instantaneous_flicker_and_voltage',
+    name: 'Instant Voltage',
+    description: 'Monitor instantaneous voltage changes.',
+    displayOrder: 2,
+  },
 ];
 
 const mockProjects: Project[] = [
@@ -86,8 +279,8 @@ const mockProjects: Project[] = [
     startDate: '2024-01-15',
     endDate: '2024-06-30',
     progress: 65,
-    featuresUsed: ['f1', 'f3', 'f4', 'f5', 'f6', 'f8'],
-    deployedFeatures: ['f1', 'f3', 'f8'],
+    featuresUsed: ['frequency_events', 'file_management', 'active_events', 'voltage_overview'],
+    deployedFeatures: ['frequency_events', 'file_management'],
     description: 'Building a comprehensive e-commerce platform for retail clients'
   },
   {
@@ -97,8 +290,8 @@ const mockProjects: Project[] = [
     startDate: '2024-02-01',
     endDate: '2024-04-15',
     progress: 100,
-    featuresUsed: ['f1', 'f2', 'f7', 'f8'],
-    deployedFeatures: ['f1', 'f2', 'f7', 'f8'],
+    featuresUsed: ['event_detection', 'oscillation_events', 'monitoring_dashboard'],
+    deployedFeatures: ['event_detection', 'oscillation_events', 'monitoring_dashboard'],
     description: 'Analytics dashboard for internal business intelligence'
   },
   {
@@ -108,8 +301,8 @@ const mockProjects: Project[] = [
     startDate: '2024-03-01',
     endDate: '2024-08-31',
     progress: 45,
-    featuresUsed: ['f1', 'f3', 'f5', 'f6'],
-    deployedFeatures: ['f1', 'f3'],
+    featuresUsed: ['rocof_trends', 'passive_events', 'stress_scenarios'],
+    deployedFeatures: ['rocof_trends'],
     description: 'API backend for mobile application with push notifications'
   },
   {
@@ -119,7 +312,7 @@ const mockProjects: Project[] = [
     startDate: '2024-05-01',
     endDate: '2024-09-30',
     progress: 15,
-    featuresUsed: ['f1', 'f2', 'f5', 'f8'],
+    featuresUsed: ['data_ingest', 'voltage_alerts', 'flicker_insights'],
     deployedFeatures: [],
     description: 'Modernizing customer-facing portal with enhanced analytics'
   },
@@ -130,8 +323,8 @@ const mockProjects: Project[] = [
     startDate: '2024-04-01',
     endDate: '2024-07-15',
     progress: 55,
-    featuresUsed: ['f1', 'f3', 'f4', 'f8'],
-    deployedFeatures: ['f1', 'f3'],
+    featuresUsed: ['inertia_reports', 'strength_index'],
+    deployedFeatures: ['inertia_reports'],
     description: 'Implementing multi-currency payment processing with fraud detection'
   },
   {
@@ -141,8 +334,8 @@ const mockProjects: Project[] = [
     startDate: '2023-11-01',
     endDate: '2024-03-31',
     progress: 100,
-    featuresUsed: ['f1', 'f2', 'f6', 'f7', 'f8'],
-    deployedFeatures: ['f1', 'f2', 'f6', 'f7', 'f8'],
+    featuresUsed: ['multimode_analysis', 'threshold_alerts', 'instant_voltage'],
+    deployedFeatures: ['multimode_analysis', 'threshold_alerts'],
     description: 'Advanced reporting engine with custom templates and automated scheduling'
   },
   {
@@ -152,7 +345,7 @@ const mockProjects: Project[] = [
     startDate: '2024-06-01',
     endDate: '2024-10-31',
     progress: 5,
-    featuresUsed: ['f1', 'f3', 'f5'],
+    featuresUsed: ['file_management', 'flicker_insights'],
     deployedFeatures: [],
     description: 'Building a centralized notification system supporting email, SMS, and push notifications'
   },
@@ -166,9 +359,9 @@ export default function App() {
   const [isInitializing, setIsInitializing] = useState(true);
   const [minLoadingTimeElapsed, setMinLoadingTimeElapsed] = useState(false);
   
+  const [products, setProducts] = useState<ProductCatalog[]>([]);
   const [features, setFeatures] = useState<ProductFeature[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
-  const [categoryOrder, setCategoryOrder] = useState<string[]>([]);
   const [auditLog, setAuditLog] = useState<AuditEntry[]>([]);
   const [teamMembers, setTeamMembers] = useState<api.TeamMember[]>([]);
   
@@ -334,16 +527,45 @@ export default function App() {
     return false;
   };
 
+  const normalizeProjectFeatures = (projectsToNormalize: Project[], featureList: ProductFeature[], productList: ProductCatalog[]) => {
+    const featureIds = new Set(featureList.map(feature => feature.id));
+    const baseFeatureByProduct = new Map(productList.map(product => [product.id, `${product.id}_base`]));
+
+    return projectsToNormalize.map(project => {
+      const normalizeIds = (ids: string[]) => {
+        const normalized = ids.map((id) => {
+          const baseId = baseFeatureByProduct.get(id);
+          if (baseId && featureIds.has(baseId)) {
+            return baseId;
+          }
+          return id;
+        });
+        return Array.from(new Set(normalized));
+      };
+
+      return {
+        ...project,
+        featuresUsed: normalizeIds(project.featuresUsed),
+        deployedFeatures: normalizeIds(project.deployedFeatures),
+      };
+    });
+  };
+
   const loadDataFromServer = async () => {
     try {
       // Try to load data from server - use allSettled to handle individual failures gracefully
       // Load team members separately with retry logic to prevent it from blocking other data
-      const [projectsRes, featuresRes, categoriesRes, auditRes] = await Promise.allSettled([
+      const [projectsRes, featuresRes, productsRes, auditRes] = await Promise.allSettled([
         api.getProjects(),
         api.getFeatures(),
-        api.getCategories(),
+        api.getProducts(),
         api.getAuditLog(),
       ]).then(results => results.map(r => r.status === 'fulfilled' ? r.value : { error: 'Failed to load' }));
+
+      const fallbackProducts = productsRes.data?.products || mockProducts;
+      const fallbackFeatures = featuresRes.data?.features || mockProductFeatures;
+      setProducts(fallbackProducts);
+      setFeatures(fallbackFeatures);
 
       // Check if we got data from server
       const hasServerData = projectsRes.data?.projects && projectsRes.data.projects.length > 0;
@@ -351,25 +573,21 @@ export default function App() {
       if (!hasServerData) {
         // No server data - check for localStorage data to migrate
         const localProjects = localStorage.getItem('projects');
-        const localFeatures = localStorage.getItem('features');
-        const localCategoryOrder = localStorage.getItem('categoryOrder');
         const localAuditLog = localStorage.getItem('auditLog');
 
-        if (localProjects || localFeatures) {
+        if (localProjects) {
           // Migrate localStorage data to server
           const migrationData = {
             projects: localProjects ? JSON.parse(localProjects) : mockProjects,
-            features: localFeatures ? JSON.parse(localFeatures) : mockProductFeatures,
-            categoryOrder: localCategoryOrder ? JSON.parse(localCategoryOrder) : 
-              Array.from(new Set(mockProductFeatures.map(f => f.category))),
+            features: [],
+            categoryOrder: [],
             auditLog: localAuditLog ? JSON.parse(localAuditLog) : [],
           };
 
           await api.initializeData(migrationData);
           
-          setProjects(migrationData.projects);
-          setFeatures(migrationData.features);
-          setCategoryOrder(migrationData.categoryOrder);
+          const normalizedProjects = normalizeProjectFeatures(migrationData.projects, fallbackFeatures, fallbackProducts);
+          setProjects(normalizedProjects);
           
           const withDates = migrationData.auditLog.map((entry: any) => ({
             ...entry,
@@ -384,21 +602,23 @@ export default function App() {
           // No data anywhere - use mock data
           await api.initializeData({
             projects: mockProjects,
-            features: mockProductFeatures,
-            categoryOrder: Array.from(new Set(mockProductFeatures.map(f => f.category))),
+            features: [],
+            categoryOrder: [],
             auditLog: [],
           });
 
-          setProjects(mockProjects);
-          setFeatures(mockProductFeatures);
-          setCategoryOrder(Array.from(new Set(mockProductFeatures.map(f => f.category))));
+          const normalizedProjects = normalizeProjectFeatures(mockProjects, fallbackFeatures, fallbackProducts);
+          setProjects(normalizedProjects);
           setAuditLog([]);
         }
       } else {
         // Use server data
-        if (projectsRes.data) setProjects(projectsRes.data.projects);
-        if (featuresRes.data) setFeatures(featuresRes.data.features);
-        if (categoriesRes.data) setCategoryOrder(categoriesRes.data.categoryOrder);
+        let normalizedProjects: Project[] = [];
+        if (projectsRes.data) {
+          normalizedProjects = normalizeProjectFeatures(projectsRes.data.projects, fallbackFeatures, fallbackProducts);
+          setProjects(normalizedProjects);
+        }
+        if (productsRes.data) setProducts(productsRes.data.products);
         if (auditRes.data) {
           const withDates = auditRes.data.auditLog.map((entry: any) => ({
             ...entry,
@@ -409,7 +629,7 @@ export default function App() {
 
         // Check if we need to add new dummy projects (p5, p6, p7)
         if (projectsRes.data?.projects) {
-          const existingIds = projectsRes.data.projects.map((p: Project) => p.id);
+          const existingIds = normalizedProjects.map((p: Project) => p.id);
           const newProjects = mockProjects.filter(p => ['p5', 'p6', 'p7'].includes(p.id) && !existingIds.includes(p.id));
           
           if (newProjects.length > 0) {
@@ -419,7 +639,7 @@ export default function App() {
             }
             
             // Update local state
-            setProjects([...projectsRes.data.projects, ...newProjects]);
+            setProjects([...normalizedProjects, ...newProjects]);
             
             toast.success('New projects added', { 
               description: `Added ${newProjects.length} new dummy project${newProjects.length > 1 ? 's' : ''}` 
@@ -446,9 +666,9 @@ export default function App() {
     setCurrentUser(null);
     setIsAdmin(false);
     localStorage.removeItem('accessToken');
+    setProducts([]);
     setProjects([]);
     setFeatures([]);
-    setCategoryOrder([]);
     setAuditLog([]);
     toast.success('Logged out successfully');
   };
@@ -480,9 +700,9 @@ export default function App() {
       setCurrentUser(null);
       setIsAdmin(false);
       localStorage.removeItem('accessToken');
+      setProducts([]);
       setProjects([]);
       setFeatures([]);
-      setCategoryOrder([]);
       setAuditLog([]);
       
       toast.success('Account deleted successfully', { 
@@ -530,6 +750,56 @@ export default function App() {
     toast.success('Project created', { description: project.name });
   };
 
+  const handleAddProduct = async (product: ProductCatalog) => {
+    const result = await api.createProduct(product);
+    if (result.error) {
+      toast.error('Failed to add product', { description: result.error });
+      return;
+    }
+
+    const savedProduct = result.data?.product || product;
+    setProducts([...products, savedProduct]);
+    await addAuditEntry('create', 'feature', savedProduct.name, 'Added product catalog entry');
+    toast.success('Product added', { description: savedProduct.name });
+  };
+
+  const handleUpdateProduct = async (updatedProduct: ProductCatalog) => {
+    const result = await api.updateProduct(updatedProduct.id, updatedProduct);
+    if (result.error) {
+      toast.error('Failed to update product', { description: result.error });
+      return;
+    }
+
+    const savedProduct = result.data?.product || updatedProduct;
+    setProducts(products.map(p => p.id === savedProduct.id ? savedProduct : p));
+    await addAuditEntry('update', 'feature', savedProduct.name, 'Updated product catalog entry');
+    toast.success('Product updated', { description: savedProduct.name });
+  };
+
+  const handleDeleteProduct = async (productId: string) => {
+    const product = products.find(p => p.id === productId);
+    const featureIdsToRemove = features.filter(feature => feature.productId === productId).map(feature => feature.id);
+    const result = await api.deleteProduct(productId);
+    if (result.error) {
+      toast.error('Failed to delete product', { description: result.error });
+      return;
+    }
+
+    setProducts(products.filter(p => p.id !== productId));
+    setFeatures(features.filter(f => f.productId !== productId));
+    if (featureIdsToRemove.length > 0) {
+      setProjects(projects.map(p => ({
+        ...p,
+        featuresUsed: p.featuresUsed.filter(id => !featureIdsToRemove.includes(id)),
+        deployedFeatures: p.deployedFeatures.filter(id => !featureIdsToRemove.includes(id)),
+      })));
+    }
+    if (product) {
+      await addAuditEntry('delete', 'feature', product.name, 'Removed product catalog entry');
+      toast.success('Product deleted', { description: product.name });
+    }
+  };
+
   const handleAddFeature = async (feature: ProductFeature) => {
     const result = await api.createFeature(feature);
     if (result.error) {
@@ -537,17 +807,11 @@ export default function App() {
       return;
     }
     
-    setFeatures([...features, feature]);
+    const savedFeature = result.data?.feature || feature;
+    setFeatures([...features, savedFeature]);
     
-    // Add new category to order if it doesn't exist
-    if (!categoryOrder.includes(feature.category)) {
-      const newOrder = [...categoryOrder, feature.category];
-      setCategoryOrder(newOrder);
-      await api.updateCategories(newOrder);
-    }
-    
-    await addAuditEntry('create', 'feature', feature.name, `Added to ${feature.category} category`);
-    toast.success('Feature added', { description: feature.name });
+    await addAuditEntry('create', 'feature', savedFeature.name, 'Added to product catalog');
+    toast.success('Feature added', { description: savedFeature.name });
   };
 
   const handleUpdateFeature = async (updatedFeature: ProductFeature) => {
@@ -558,17 +822,11 @@ export default function App() {
     }
     
     // Update features array
-    setFeatures(features.map(f => f.id === updatedFeature.id ? updatedFeature : f));
+    const savedFeature = result.data?.feature || updatedFeature;
+    setFeatures(features.map(f => f.id === savedFeature.id ? savedFeature : f));
     
-    // Add new category to order if it doesn't exist
-    if (!categoryOrder.includes(updatedFeature.category)) {
-      const newOrder = [...categoryOrder, updatedFeature.category];
-      setCategoryOrder(newOrder);
-      await api.updateCategories(newOrder);
-    }
-    
-    await addAuditEntry('update', 'feature', updatedFeature.name, `Updated in ${updatedFeature.category} category`);
-    toast.success('Feature updated', { description: updatedFeature.name });
+    await addAuditEntry('update', 'feature', savedFeature.name, 'Updated product catalog entry');
+    toast.success('Feature updated', { description: savedFeature.name });
   };
 
   const handleDeleteFeature = async (featureId: string) => {
@@ -590,7 +848,7 @@ export default function App() {
     })));
     
     if (feature) {
-      await addAuditEntry('delete', 'feature', feature.name, `Removed from ${feature.category} category`);
+      await addAuditEntry('delete', 'feature', feature.name, 'Removed from product catalog');
       toast.success('Feature deleted', { description: feature.name });
     }
   };
@@ -610,27 +868,6 @@ export default function App() {
       await addAuditEntry('delete', 'project', project.name);
       toast.success('Project deleted', { description: project.name });
     }
-  };
-
-  const handleReorderCategory = async (category: string, direction: 'up' | 'down') => {
-    const currentIndex = categoryOrder.indexOf(category);
-    if (currentIndex === -1) return;
-
-    const newOrder = [...categoryOrder];
-    
-    if (direction === 'up' && currentIndex > 0) {
-      [newOrder[currentIndex], newOrder[currentIndex - 1]] = 
-        [newOrder[currentIndex - 1], newOrder[currentIndex]];
-    } else if (direction === 'down' && currentIndex < categoryOrder.length - 1) {
-      [newOrder[currentIndex], newOrder[currentIndex + 1]] = 
-        [newOrder[currentIndex + 1], newOrder[currentIndex]];
-    } else {
-      return;
-    }
-    
-    setCategoryOrder(newOrder);
-    await api.updateCategories(newOrder);
-    await addAuditEntry('reorder', 'category', category, `Moved ${direction}`);
   };
 
   const handleUpdateProject = async (updatedProject: Project) => {
@@ -853,14 +1090,13 @@ export default function App() {
 
               <TabsContent value="board" className="mt-6">
                 <ProductProjectBoard 
+                  products={products}
                   features={features} 
                   projects={filteredProjects}
-                  categoryOrder={categoryOrder}
                   currentUser={currentUser}
                   teamMembers={teamMembers}
                   onUpdateProject={handleUpdateProject}
                   onDeleteProject={handleDeleteProject}
-                  onReorderCategory={handleReorderCategory}
                   onOpenAtlassianSettings={() => setIsAtlassianDialogOpen(true)}
                 />
               </TabsContent>
@@ -870,7 +1106,7 @@ export default function App() {
               </TabsContent>
 
               <TabsContent value="features" className="mt-6">
-                <FeaturesMatrix features={features} projects={projects} />
+                <FeaturesMatrix products={products} features={features} projects={projects} />
               </TabsContent>
 
               <TabsContent value="audit" className="mt-6">
@@ -888,21 +1124,21 @@ export default function App() {
               open={isAddDialogOpen}
               onOpenChange={setIsAddDialogOpen}
               features={features}
+              products={products}
               onAdd={handleAddProject}
             />
 
             <ManageFeaturesDialog
               open={isFeaturesDialogOpen}
               onOpenChange={setIsFeaturesDialogOpen}
+              products={products}
               features={features}
-              categoryOrder={categoryOrder}
+              onAddProduct={handleAddProduct}
+              onUpdateProduct={handleUpdateProduct}
+              onDeleteProduct={handleDeleteProduct}
               onAdd={handleAddFeature}
               onUpdate={handleUpdateFeature}
               onDelete={handleDeleteFeature}
-              onUpdateCategoryOrder={async (newOrder: string[]) => {
-                setCategoryOrder(newOrder);
-                await api.updateCategories(newOrder);
-              }}
             />
 
             <AccountSettingsDialog

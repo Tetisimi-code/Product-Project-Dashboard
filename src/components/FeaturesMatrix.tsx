@@ -1,4 +1,4 @@
-import { ProductFeature, Project } from '../App';
+import { ProductCatalog, ProductFeature, Project } from '../App';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
@@ -6,20 +6,19 @@ import { CheckCircle2, Circle, Package, TrendingUp } from 'lucide-react';
 import { ScrollArea } from './ui/scroll-area';
 
 interface FeaturesMatrixProps {
+  products: ProductCatalog[];
   features: ProductFeature[];
   projects: Project[];
 }
 
-export function FeaturesMatrix({ features, projects }: FeaturesMatrixProps) {
-  // Group features by category
-  const featuresByCategory = features.reduce((acc, feature) => {
-    if (!acc[feature.category]) {
-      acc[feature.category] = [];
-    }
-    acc[feature.category].push(feature);
-    return acc;
-  }, {} as Record<string, ProductFeature[]>);
-
+export function FeaturesMatrix({ products, features, projects }: FeaturesMatrixProps) {
+  const productMap = new Map(products.map((product) => [product.id, product.name]));
+  const sortedFeatures = [...features].sort((a, b) => {
+    const orderA = a.displayOrder ?? Number.MAX_SAFE_INTEGER;
+    const orderB = b.displayOrder ?? Number.MAX_SAFE_INTEGER;
+    if (orderA !== orderB) return orderA - orderB;
+    return a.name.localeCompare(b.name);
+  });
   // Calculate feature usage stats
   const getFeatureStats = (featureId: string) => {
     const projectsUsing = projects.filter(p => p.featuresUsed.includes(featureId));
@@ -103,7 +102,7 @@ export function FeaturesMatrix({ features, projects }: FeaturesMatrixProps) {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-64 sticky left-0 bg-white z-10">Feature</TableHead>
-                  <TableHead className="w-32">Category</TableHead>
+                  <TableHead className="w-40">Product</TableHead>
                   {projects.map(project => (
                     <TableHead key={project.id} className="min-w-32">
                       <div className="truncate">{project.name}</div>
@@ -114,7 +113,7 @@ export function FeaturesMatrix({ features, projects }: FeaturesMatrixProps) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {features.map((feature) => {
+                {sortedFeatures.map((feature) => {
                   const stats = getFeatureStats(feature.id);
                   return (
                     <TableRow key={feature.id}>
@@ -125,7 +124,7 @@ export function FeaturesMatrix({ features, projects }: FeaturesMatrixProps) {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="secondary">{feature.category}</Badge>
+                        <Badge variant="secondary">{productMap.get(feature.productId) || 'Unknown'}</Badge>
                       </TableCell>
                       {projects.map(project => {
                         const isUsed = project.featuresUsed.includes(feature.id);
@@ -177,15 +176,12 @@ export function FeaturesMatrix({ features, projects }: FeaturesMatrixProps) {
                 <TableHead>Total Features</TableHead>
                 <TableHead>Deployed Features</TableHead>
                 <TableHead>Deployment Rate</TableHead>
-                <TableHead>Categories Used</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {projects.map(project => {
                 const stats = getProjectStats(project.id);
                 const deploymentRate = stats.total > 0 ? Math.round((stats.deployed / stats.total) * 100) : 0;
-                const usedFeatures = features.filter(f => project.featuresUsed.includes(f.id));
-                const categories = [...new Set(usedFeatures.map(f => f.category))];
 
                 return (
                   <TableRow key={project.id}>
@@ -209,15 +205,6 @@ export function FeaturesMatrix({ features, projects }: FeaturesMatrixProps) {
                           />
                         </div>
                         <span className="text-slate-700">{deploymentRate}%</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1">
-                        {categories.map(category => (
-                          <Badge key={category} variant="outline" className="text-xs">
-                            {category}
-                          </Badge>
-                        ))}
                       </div>
                     </TableCell>
                   </TableRow>

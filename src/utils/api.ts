@@ -215,6 +215,34 @@ export async function deleteFeature(id: string) {
 }
 
 // ============================================
+// PRODUCTS API
+// ============================================
+
+export async function getProducts() {
+  return fetchWithAuth<{ products: any[] }>('/products');
+}
+
+export async function createProduct(product: any) {
+  return fetchWithAuth<{ product: any }>('/products', {
+    method: 'POST',
+    body: JSON.stringify(product),
+  });
+}
+
+export async function updateProduct(id: string, product: any) {
+  return fetchWithAuth<{ product: any }>(`/products/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(product),
+  });
+}
+
+export async function deleteProduct(id: string) {
+  return fetchWithAuth<{ success: boolean }>(`/products/${id}`, {
+    method: 'DELETE',
+  });
+}
+
+// ============================================
 // CATEGORIES API
 // ============================================
 

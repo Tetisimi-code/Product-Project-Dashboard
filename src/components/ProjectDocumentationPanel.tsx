@@ -1,4 +1,4 @@
-import { ProductFeature, Project } from '../App';
+import { ProductCatalog, ProductFeature, Project } from '../App';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
 import { FileText, Copy, Check, FileUp, BookOpen } from 'lucide-react';
@@ -10,6 +10,7 @@ interface ProjectDocumentationPanelProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   project: Project;
+  products: ProductCatalog[];
   features: ProductFeature[];
 }
 
@@ -17,19 +18,26 @@ export function ProjectDocumentationPanel({
   open,
   onOpenChange,
   project,
+  products,
   features,
 }: ProjectDocumentationPanelProps) {
   const [copied, setCopied] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
 
   const usedFeatures = features.filter(f => project.featuresUsed.includes(f.id));
-  const deployedCount = project.deployedFeatures.length;
-  const totalCount = project.featuresUsed.length;
+  const deployedFeatureIds = new Set(project.deployedFeatures);
+  const deployedCount = usedFeatures.filter(feature => deployedFeatureIds.has(feature.id)).length;
+  const totalCount = usedFeatures.length;
+  const canGenerate = totalCount > 0;
+  const productNameById = new Map(products.map(product => [product.id, product.name]));
+  const enabledProducts = Array.from(new Set(usedFeatures.map(feature => feature.productId)))
+    .map(productId => productNameById.get(productId))
+    .filter((name): name is string => Boolean(name));
 
   const documentationText = `Project Documentation
 
 Enabled Products:
-${usedFeatures.map(f => `✓ ${f.name}`).join('\n')}
+${enabledProducts.length > 0 ? enabledProducts.map(name => `✓ ${name}`).join('\n') : 'None'}
 
 Status:
 ${deployedCount} / ${totalCount} features deployed
@@ -45,9 +53,16 @@ Actions:
   };
 
   const handleGenerateManual = async () => {
+    if (!canGenerate) {
+      toast.error('No product features enabled', {
+        description: 'Add product features to this project before generating a manual.',
+      });
+      return;
+    }
+
     setIsGenerating(true);
     try {
-      const idempotencyKey = `${project.id}:${project.featuresUsed.join(',')}`;
+      const idempotencyKey = `${project.id}:${usedFeatures.map(feature => feature.id).join(',')}`;
       const startResult = await api.generateUserManual(project.id, idempotencyKey);
       if (startResult.error || !startResult.data?.jobId) {
         throw new Error(startResult.error || 'Manual generation failed');
@@ -154,12 +169,16 @@ Actions:
               <div>
                 <div className="text-slate-500 mb-2">Enabled Products:</div>
                 <div className="space-y-1 pl-2">
-                  {usedFeatures.map(feature => (
-                    <div key={feature.id} className="flex items-start gap-2">
-                      <span style={{ color: '#4ade80' }}>✓</span>
-                      <span className="text-white">{feature.name}</span>
-                    </div>
-                  ))}
+                  {enabledProducts.length > 0 ? (
+                    enabledProducts.map(productName => (
+                      <div key={productName} className="flex items-start gap-2">
+                        <span style={{ color: '#4ade80' }}>✓</span>
+                        <span className="text-white">{productName}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-white">None</div>
+                  )}
                 </div>
               </div>
 
@@ -185,7 +204,7 @@ Actions:
               className="w-full justify-start gap-2 h-auto py-4"
               variant="outline"
               onClick={handleGenerateManual}
-              disabled={isGenerating}
+              disabled={isGenerating || !canGenerate}
             >
               <BookOpen className="size-5" />
               <div className="flex flex-col items-start">
@@ -193,7 +212,9 @@ Actions:
                   {isGenerating ? 'Generating User Manual...' : 'Generate User Manual'}
                 </span>
                 <span className="text-sm text-slate-500 font-normal">
-                  Auto-generate documentation based on enabled features
+                  {canGenerate
+                    ? 'Auto-generate documentation based on enabled features'
+                    : 'Add product features to enable manual generation'}
                 </span>
               </div>
             </Button>

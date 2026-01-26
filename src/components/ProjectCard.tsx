@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ProductFeature, Project } from '../App';
+import { ProductCatalog, ProductFeature, Project } from '../App';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { Progress } from './ui/progress';
@@ -14,6 +14,7 @@ import { TeamMember } from '../utils/api';
 
 interface ProjectCardProps {
   project: Project;
+  products: ProductCatalog[];
   features: ProductFeature[];
   currentUser: any;
   teamMembers: TeamMember[];
@@ -49,7 +50,7 @@ const deploymentStatusColors = {
   'rolled-back': 'text-orange-500',
 };
 
-export function ProjectCard({ project, features, currentUser, teamMembers, onUpdate, onDelete, onOpenAtlassianSettings }: ProjectCardProps) {
+export function ProjectCard({ project, products, features, currentUser, teamMembers, onUpdate, onDelete, onOpenAtlassianSettings }: ProjectCardProps) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isJiraLinkDialogOpen, setIsJiraLinkDialogOpen] = useState(false);
   const [isDocPanelOpen, setIsDocPanelOpen] = useState(false);
@@ -57,8 +58,9 @@ export function ProjectCard({ project, features, currentUser, teamMembers, onUpd
   const StatusIcon = statusConfig[project.status].icon;
   
   const usedFeatures = features.filter(f => project.featuresUsed.includes(f.id));
-  const deployedCount = project.deployedFeatures.length;
-  const totalCount = project.featuresUsed.length;
+  const deployedFeatureIds = new Set(project.deployedFeatures);
+  const deployedCount = usedFeatures.filter(feature => deployedFeatureIds.has(feature.id)).length;
+  const totalCount = usedFeatures.length;
 
   const handleDelete = () => {
     if (confirm(`Are you sure you want to delete "${project.name}"?`)) {
@@ -156,18 +158,6 @@ export function ProjectCard({ project, features, currentUser, teamMembers, onUpd
             </div>
           </div>
 
-          {/* Feature Categories */}
-          <div>
-            <span className="text-slate-600">Categories Used</span>
-            <div className="flex flex-wrap gap-2 mt-2">
-              {[...new Set(usedFeatures.map(f => f.category))].map(category => (
-                <Badge key={category} variant="secondary">
-                  {category}
-                </Badge>
-              ))}
-            </div>
-          </div>
-
           {/* Atlassian Integration & Documentation */}
           <div className="pt-2 border-t">
             <div className="flex items-center gap-2 flex-wrap">
@@ -221,6 +211,7 @@ export function ProjectCard({ project, features, currentUser, teamMembers, onUpd
         open={isEditDialogOpen}
         onOpenChange={setIsEditDialogOpen}
         project={project}
+        products={products}
         features={features}
         onUpdate={onUpdate}
       />
@@ -239,6 +230,7 @@ export function ProjectCard({ project, features, currentUser, teamMembers, onUpd
         open={isDocPanelOpen}
         onOpenChange={setIsDocPanelOpen}
         project={project}
+        products={products}
         features={features}
       />
 

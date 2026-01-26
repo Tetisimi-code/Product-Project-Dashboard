@@ -639,6 +639,193 @@ app.delete("/server/projects/:id", async (c) => {
 });
 
 // ============================================
+// PRODUCTS ROUTES
+// ============================================
+
+// Get all products
+app.get("/server/products", async (c) => {
+  try {
+    const user = await verifyAuth(c.req.header('Authorization'));
+    if (!user) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const { data, error } = await supabase
+      .from('product_catalog')
+      .select('product_id,product_name,product_description,manual_url,display_order')
+      .order('display_order', { ascending: true })
+      .order('product_name', { ascending: true });
+
+    if (error) {
+      console.log(`Error fetching products: ${error.message}`);
+      return c.json({ error: "Failed to fetch products" }, 500);
+    }
+
+    const products = (data || []).map((row) => ({
+      id: row.product_id,
+      name: row.product_name,
+      description: row.product_description || '',
+      manualUrl: row.manual_url || null,
+      displayOrder: row.display_order ?? null,
+    }));
+
+    return c.json({ products });
+  } catch (error) {
+    console.log(`Error fetching products: ${error}`);
+    return c.json({ error: "Failed to fetch products" }, 500);
+  }
+});
+
+// Create product
+app.post("/server/products", async (c) => {
+  try {
+    const user = await verifyAuth(c.req.header('Authorization'));
+    if (!user) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const product = await c.req.json();
+    if (!product?.id || !product?.name) {
+      return c.json({ error: "Product id and name are required" }, 400);
+    }
+
+    const { data, error } = await supabase
+      .from('product_catalog')
+      .insert({
+        product_id: product.id,
+        product_name: product.name,
+        product_description: product.description || '',
+        manual_url: product.manualUrl || null,
+        display_order: product.displayOrder ?? null,
+      })
+      .select('product_id,product_name,product_description,manual_url,display_order')
+      .single();
+
+    if (error) {
+      console.log(`Error creating product: ${error.message}`);
+      return c.json({ error: "Failed to create product" }, 500);
+    }
+
+    return c.json({
+      product: {
+        id: data.product_id,
+        name: data.product_name,
+        description: data.product_description || '',
+        manualUrl: data.manual_url || null,
+        displayOrder: data.display_order ?? null,
+      },
+    });
+  } catch (error) {
+    console.log(`Error creating product: ${error}`);
+    return c.json({ error: "Failed to create product" }, 500);
+  }
+});
+
+// Update product
+app.put("/server/products/:id", async (c) => {
+  try {
+    const user = await verifyAuth(c.req.header('Authorization'));
+    if (!user) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const productId = c.req.param('id');
+    const updatedProduct = await c.req.json();
+    if (!updatedProduct?.name) {
+      return c.json({ error: "Product name is required" }, 400);
+    }
+
+    const { data, error } = await supabase
+      .from('product_catalog')
+      .update({
+        product_name: updatedProduct.name,
+        product_description: updatedProduct.description || '',
+        manual_url: updatedProduct.manualUrl || null,
+        display_order: updatedProduct.displayOrder ?? null,
+      })
+      .eq('product_id', productId)
+      .select('product_id,product_name,product_description,manual_url,display_order')
+      .single();
+
+    if (error) {
+      console.log(`Error updating product: ${error.message}`);
+      return c.json({ error: "Failed to update product" }, 500);
+    }
+
+    return c.json({
+      product: {
+        id: data.product_id,
+        name: data.product_name,
+        description: data.product_description || '',
+        manualUrl: data.manual_url || null,
+        displayOrder: data.display_order ?? null,
+      },
+    });
+  } catch (error) {
+    console.log(`Error updating product: ${error}`);
+    return c.json({ error: "Failed to update product" }, 500);
+  }
+});
+
+// Delete product
+app.delete("/server/products/:id", async (c) => {
+  try {
+    const user = await verifyAuth(c.req.header('Authorization'));
+    if (!user) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const productId = c.req.param('id');
+    const { data: featureRows, error: featureFetchError } = await supabase
+      .from('product_features')
+      .select('id')
+      .eq('product_id', productId);
+
+    if (featureFetchError) {
+      console.log(`Error fetching product features: ${featureFetchError.message}`);
+      return c.json({ error: "Failed to delete product" }, 500);
+    }
+
+    const featureIds = (featureRows || []).map((row) => row.id);
+
+    const { error: featureDeleteError } = await supabase
+      .from('product_features')
+      .delete()
+      .eq('product_id', productId);
+
+    if (featureDeleteError) {
+      console.log(`Error deleting product features: ${featureDeleteError.message}`);
+      return c.json({ error: "Failed to delete product features" }, 500);
+    }
+
+    const { error } = await supabase
+      .from('product_catalog')
+      .delete()
+      .eq('product_id', productId);
+
+    if (error) {
+      console.log(`Error deleting product: ${error.message}`);
+      return c.json({ error: "Failed to delete product" }, 500);
+    }
+
+    if (featureIds.length > 0) {
+      const projects = await kv.get('projects') || [];
+      const updatedProjects = projects.map((p: any) => ({
+        ...p,
+        featuresUsed: p.featuresUsed.filter((id: string) => !featureIds.includes(id)),
+        deployedFeatures: p.deployedFeatures.filter((id: string) => !featureIds.includes(id)),
+      }));
+      await kv.set('projects', updatedProjects);
+    }
+
+    return c.json({ success: true });
+  } catch (error) {
+    console.log(`Error deleting product: ${error}`);
+    return c.json({ error: "Failed to delete product" }, 500);
+  }
+});
+
+// ============================================
 // FEATURES ROUTES
 // ============================================
 
@@ -650,7 +837,25 @@ app.get("/server/features", async (c) => {
       return c.json({ error: "Unauthorized" }, 401);
     }
 
-    const features = await kv.get('features') || [];
+    const { data, error } = await supabase
+      .from('product_features')
+      .select('id,product_id,feature_name,feature_description,display_order')
+      .order('display_order', { ascending: true })
+      .order('feature_name', { ascending: true });
+
+    if (error) {
+      console.log(`Error fetching features: ${error.message}`);
+      return c.json({ error: "Failed to fetch features" }, 500);
+    }
+
+    const features = (data || []).map((row) => ({
+      id: row.id,
+      productId: row.product_id,
+      name: row.feature_name,
+      description: row.feature_description || '',
+      displayOrder: row.display_order ?? null,
+    }));
+
     return c.json({ features });
   } catch (error) {
     console.log(`Error fetching features: ${error}`);
@@ -667,11 +872,40 @@ app.post("/server/features", async (c) => {
     }
 
     const feature = await c.req.json();
-    const features = await kv.get('features') || [];
-    features.push(feature);
-    await kv.set('features', features);
+    if (!feature?.productId || !feature?.name) {
+      return c.json({ error: "Feature productId and name are required" }, 400);
+    }
 
-    return c.json({ feature });
+    const insertPayload: any = {
+      product_id: feature.productId,
+      feature_name: feature.name,
+      feature_description: feature.description || '',
+      display_order: feature.displayOrder ?? null,
+    };
+    if (feature.id) {
+      insertPayload.id = feature.id;
+    }
+
+    const { data, error } = await supabase
+      .from('product_features')
+      .insert(insertPayload)
+      .select('id,product_id,feature_name,feature_description,display_order')
+      .single();
+
+    if (error) {
+      console.log(`Error creating feature: ${error.message}`);
+      return c.json({ error: "Failed to create feature" }, 500);
+    }
+
+    return c.json({
+      feature: {
+        id: data.id,
+        productId: data.product_id,
+        name: data.feature_name,
+        description: data.feature_description || '',
+        displayOrder: data.display_order ?? null,
+      },
+    });
   } catch (error) {
     console.log(`Error creating feature: ${error}`);
     return c.json({ error: "Failed to create feature" }, 500);
@@ -688,18 +922,36 @@ app.put("/server/features/:id", async (c) => {
 
     const featureId = c.req.param('id');
     const updatedFeature = await c.req.json();
-    
-    const features = await kv.get('features') || [];
-    const index = features.findIndex((f: any) => f.id === featureId);
-    
-    if (index === -1) {
-      return c.json({ error: "Feature not found" }, 404);
+    if (!updatedFeature?.name || !updatedFeature?.productId) {
+      return c.json({ error: "Feature name and productId are required" }, 400);
     }
 
-    features[index] = updatedFeature;
-    await kv.set('features', features);
+    const { data, error } = await supabase
+      .from('product_features')
+      .update({
+        product_id: updatedFeature.productId,
+        feature_name: updatedFeature.name,
+        feature_description: updatedFeature.description || '',
+        display_order: updatedFeature.displayOrder ?? null,
+      })
+      .eq('id', featureId)
+      .select('id,product_id,feature_name,feature_description,display_order')
+      .single();
 
-    return c.json({ feature: updatedFeature });
+    if (error) {
+      console.log(`Error updating feature: ${error.message}`);
+      return c.json({ error: "Failed to update feature" }, 500);
+    }
+
+    return c.json({
+      feature: {
+        id: data.id,
+        productId: data.product_id,
+        name: data.feature_name,
+        description: data.feature_description || '',
+        displayOrder: data.display_order ?? null,
+      },
+    });
   } catch (error) {
     console.log(`Error updating feature: ${error}`);
     return c.json({ error: "Failed to update feature" }, 500);
@@ -715,10 +967,15 @@ app.delete("/server/features/:id", async (c) => {
     }
 
     const featureId = c.req.param('id');
-    const features = await kv.get('features') || [];
-    const filtered = features.filter((f: any) => f.id !== featureId);
-    
-    await kv.set('features', filtered);
+    const { error } = await supabase
+      .from('product_features')
+      .delete()
+      .eq('id', featureId);
+
+    if (error) {
+      console.log(`Error deleting feature: ${error.message}`);
+      return c.json({ error: "Failed to delete feature" }, 500);
+    }
 
     // Also remove from projects
     const projects = await kv.get('projects') || [];
@@ -728,7 +985,7 @@ app.delete("/server/features/:id", async (c) => {
       deployedFeatures: p.deployedFeatures.filter((id: string) => id !== featureId),
     }));
     await kv.set('projects', updatedProjects);
-
+    
     return c.json({ success: true });
   } catch (error) {
     console.log(`Error deleting feature: ${error}`);
@@ -841,9 +1098,23 @@ app.post("/server/docs/generate", async (c) => {
       return c.json({ error: 'Project not found' }, 404);
     }
 
-    const productIds = (project.featuresUsed || []).filter((id: string) => Boolean(id));
+    const featureIds = (project.featuresUsed || []).filter((id: string) => Boolean(id));
+    if (featureIds.length === 0) {
+      return c.json({ error: 'No product features configured for this project' }, 400);
+    }
+
+    const { data: featureRows, error: featureError } = await supabase
+      .from('product_features')
+      .select('product_id')
+      .in('id', featureIds);
+
+    if (featureError) {
+      return c.json({ error: featureError.message }, 500);
+    }
+
+    const productIds = Array.from(new Set((featureRows || []).map((row) => row.product_id)));
     if (productIds.length === 0) {
-      return c.json({ error: 'No products configured for this project' }, 400);
+      return c.json({ error: 'No products resolved for this project' }, 400);
     }
 
     const { data: productRows, error: productError } = await supabase
