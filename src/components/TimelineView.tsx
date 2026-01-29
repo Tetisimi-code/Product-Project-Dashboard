@@ -57,7 +57,7 @@ export function TimelineView({ projects }: TimelineViewProps) {
           <div className="overflow-x-auto overflow-y-visible pb-4">
             <div className="space-y-6">
               {/* Timeline Header - Months */}
-              <div className="relative border-b border-slate-200 pb-3">
+              <div className="relative border-b border-border pb-3 dark:border-white/10">
                 <div className="flex" style={{ width: `${timelineWidth}px` }}>
                   {months.map((month, idx) => {
                     const monthStart = startOfMonth(month);
@@ -68,13 +68,13 @@ export function TimelineView({ projects }: TimelineViewProps) {
                     return (
                       <div
                         key={idx}
-                        className="border-l border-slate-200 px-2 flex flex-col items-center justify-center"
+                        className="border-l border-border px-2 flex flex-col items-center justify-center dark:border-white/10"
                         style={{ width: `${monthWidth}px` }}
                       >
-                        <span className="text-sm text-slate-600 font-medium whitespace-nowrap">
+                        <span className="text-sm font-medium whitespace-nowrap text-muted-foreground dark:text-white/70">
                           {format(month, 'MMM')}
                         </span>
-                        <span className="text-xs text-slate-500 whitespace-nowrap">
+                        <span className="text-xs whitespace-nowrap text-muted-foreground/80 dark:text-white/50">
                           {format(month, 'yyyy')}
                         </span>
                       </div>
@@ -112,13 +112,16 @@ export function TimelineView({ projects }: TimelineViewProps) {
                     return (
                       <div key={project.id} className="space-y-2">
                         <div className="flex items-center gap-4">
-                          <div className="w-48 flex-shrink-0">
-                            <div className="text-sm text-slate-900 font-medium">{project.name}</div>
+                        <div className="w-48 flex-shrink-0">
+                            <div className="text-sm font-medium text-foreground dark:text-white">{project.name}</div>
                             <div className="flex items-center gap-2 mt-1">
-                              <Badge variant="secondary" className="text-xs">
+                              <Badge
+                                variant="secondary"
+                                className="text-xs bg-muted/70 text-foreground border-border dark:bg-white/10 dark:text-white dark:border-white/10"
+                              >
                                 {project.status}
                               </Badge>
-                              <span className="text-xs text-slate-600">{project.progress}%</span>
+                              <span className="text-xs text-muted-foreground dark:text-white/60">{project.progress}%</span>
                             </div>
                           </div>
                           <div className="relative h-12" style={{ width: `${timelineWidth}px` }}>
@@ -134,7 +137,7 @@ export function TimelineView({ projects }: TimelineViewProps) {
                               </div>
                               {/* Progress indicator */}
                               <div
-                                className="h-full bg-slate-900 opacity-20 rounded-l"
+                                className="h-full rounded-l bg-black/25 dark:bg-black/30"
                                 style={{ width: `${project.progress}%` }}
                               />
                             </div>
@@ -154,30 +157,30 @@ export function TimelineView({ projects }: TimelineViewProps) {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardContent className="pt-6">
-            <div className="text-slate-600 mb-1">Total Projects</div>
-            <div className="text-slate-900">{projects.length}</div>
+            <div className="mb-1 text-muted-foreground dark:text-white/60">Total Projects</div>
+            <div className="text-foreground dark:text-white">{projects.length}</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <div className="text-slate-600 mb-1">In Progress</div>
-            <div className="text-slate-900">
+            <div className="mb-1 text-muted-foreground dark:text-white/60">In Progress</div>
+            <div className="text-foreground dark:text-white">
               {projects.filter(p => p.status === 'in-progress').length}
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <div className="text-slate-600 mb-1">Deployed</div>
-            <div className="text-slate-900">
+            <div className="mb-1 text-muted-foreground dark:text-white/60">Deployed</div>
+            <div className="text-foreground dark:text-white">
               {projects.filter(p => p.status === 'deployed').length}
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <div className="text-slate-600 mb-1">Average Progress</div>
-            <div className="text-slate-900">
+            <div className="mb-1 text-muted-foreground dark:text-white/60">Average Progress</div>
+            <div className="text-foreground dark:text-white">
               {Math.round(projects.reduce((sum, p) => sum + p.progress, 0) / projects.length)}%
             </div>
           </CardContent>
@@ -188,22 +191,22 @@ export function TimelineView({ projects }: TimelineViewProps) {
       <Card>
         <CardContent className="pt-6">
           <div className="flex items-center gap-6 flex-wrap">
-            <span className="text-slate-600">Status:</span>
+            <span className="text-muted-foreground dark:text-white/60">Status:</span>
             <div className="flex items-center gap-2">
               <div className="size-3 rounded bg-blue-500" />
-              <span className="text-slate-700">Planning</span>
+              <span className="text-foreground dark:text-white/70">Planning</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="size-3 rounded bg-yellow-500" />
-              <span className="text-slate-700">In Progress</span>
+              <span className="text-foreground dark:text-white/70">In Progress</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="size-3 rounded bg-green-500" />
-              <span className="text-slate-700">Deployed</span>
+              <span className="text-foreground dark:text-white/70">Deployed</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="size-3 rounded bg-slate-500" />
-              <span className="text-slate-700">Completed</span>
+              <span className="text-foreground dark:text-white/70">Completed</span>
             </div>
           </div>
         </CardContent>

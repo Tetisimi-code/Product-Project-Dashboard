@@ -62,8 +62,8 @@ export function ProductProjectBoard({ products, features, projects, currentUser,
                   return (
                     <div key={product.id} className="space-y-2">
                       <div>
-                        <div className="text-slate-900 font-medium">{product.name}</div>
-                        <p className="text-slate-600 text-sm">{product.description}</p>
+                        <div className="font-medium text-foreground dark:text-white">{product.name}</div>
+                        <p className="text-sm text-muted-foreground dark:text-white/70">{product.description}</p>
                       </div>
                       <div className="space-y-2">
                         {productFeatures.map(feature => {
@@ -71,14 +71,17 @@ export function ProductProjectBoard({ products, features, projects, currentUser,
                           return (
                             <div
                               key={feature.id}
-                              className="p-3 bg-slate-50 rounded-lg border border-slate-200 hover:border-slate-300 transition-colors"
+                              className="p-4 rounded-lg border border-border bg-muted/40 hover:bg-muted/60 transition-colors dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10"
                             >
                               <div className="mb-1">
-                                <div className="text-slate-900 mb-1 break-words">{feature.name}</div>
-                                <p className="text-slate-600 break-words">{feature.description}</p>
+                                <div className="mb-1 break-words text-foreground dark:text-white">{feature.name}</div>
+                                <p className="break-words text-muted-foreground dark:text-white/70">{feature.description}</p>
                               </div>
                               <div className="flex items-center gap-1 mt-2">
-                                <Badge variant="secondary" className="text-xs">
+                                <Badge
+                                  variant="secondary"
+                                  className="text-xs bg-muted/70 text-foreground border-border dark:bg-white/10 dark:text-white dark:border-white/10"
+                                >
                                   {projectsUsing.length} {projectsUsing.length === 1 ? 'project' : 'projects'}
                                 </Badge>
                               </div>

@@ -41,7 +41,7 @@ const deploymentStatusIcons = {
 };
 
 const deploymentStatusColors = {
-  'not-started': 'text-slate-500',
+  'not-started': 'text-muted-foreground dark:text-white/60',
   'in-development': 'text-blue-500',
   'in-testing': 'text-yellow-500',
   'staging': 'text-purple-500',
@@ -88,7 +88,7 @@ export function ProjectCard({ project, products, features, currentUser, teamMemb
             </div>
             <div className="flex items-center gap-2">
               <div className={`size-2 rounded-full ${statusConfig[project.status].color}`} />
-              <span className="text-slate-700">{statusConfig[project.status].label}</span>
+              <span className="text-muted-foreground dark:text-white/70">{statusConfig[project.status].label}</span>
               <Button
                 variant="ghost"
                 size="sm"
@@ -109,7 +109,7 @@ export function ProjectCard({ project, products, features, currentUser, teamMemb
         <CardContent className="space-y-4">
           {/* Timeline */}
           <div>
-            <div className="flex items-center gap-2 text-slate-600 mb-2">
+            <div className="flex items-center gap-2 text-muted-foreground dark:text-white/60 mb-2">
               <Calendar className="size-4" />
               <span>
                 {format(new Date(project.startDate), 'MMM d, yyyy')} - {format(new Date(project.endDate), 'MMM d, yyyy')}
@@ -117,8 +117,8 @@ export function ProjectCard({ project, products, features, currentUser, teamMemb
             </div>
             <div className="space-y-1">
               <div className="flex items-center justify-between">
-                <span className="text-slate-600">Overall Progress</span>
-                <span className="text-slate-900">{project.progress}%</span>
+                <span className="text-muted-foreground dark:text-white/60">Overall Progress</span>
+                <span className="text-foreground dark:text-white/70">{project.progress}%</span>
               </div>
               <Progress value={project.progress} />
             </div>
@@ -127,8 +127,8 @@ export function ProjectCard({ project, products, features, currentUser, teamMemb
           {/* Feature Deployment */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-slate-700">Feature Deployment</span>
-              <span className="text-slate-600">
+              <span className="text-foreground dark:text-white/70">Feature Deployment</span>
+              <span className="text-muted-foreground dark:text-white/60">
                 {deployedCount} / {totalCount} deployed
               </span>
             </div>
@@ -159,7 +159,7 @@ export function ProjectCard({ project, products, features, currentUser, teamMemb
           </div>
 
           {/* Atlassian Integration & Documentation */}
-          <div className="pt-2 border-t">
+          <div className="pt-2 border-t border-border dark:border-white/10">
             <div className="flex items-center gap-2 flex-wrap">
               {(project as any).jiraKey ? (
                 <Button
@@ -176,7 +176,7 @@ export function ProjectCard({ project, products, features, currentUser, teamMemb
                   variant="ghost"
                   size="sm"
                   onClick={() => setIsJiraLinkDialogOpen(true)}
-                  className="flex items-center gap-1 text-slate-600"
+                  className="flex items-center gap-1 text-muted-foreground hover:text-foreground dark:text-white/60 dark:hover:text-white"
                 >
                   <Link2 className="size-3" />
                   Link to Jira

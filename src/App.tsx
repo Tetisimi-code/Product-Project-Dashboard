@@ -20,7 +20,7 @@ import { Plus, Settings, History, LogOut, Loader2, Shield, UserCircle, Trash2, L
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from './components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from './components/ui/alert-dialog';
 import { AddProjectDialog } from './components/AddProjectDialog';
-import { ManageFeaturesDialog } from './components/ManageFeaturesDialog';
+import { ProductDocsManager } from './components/ProductDocsManager';
 import { Toaster } from './components/ui/sonner';
 import { toast } from 'sonner@2.0.3';
 import logoImage from 'figma:asset/54d312aed3f16e91c436bfb4f646101be4eacef7.png';
@@ -366,7 +366,6 @@ export default function App() {
   const [teamMembers, setTeamMembers] = useState<api.TeamMember[]>([]);
   
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isFeaturesDialogOpen, setIsFeaturesDialogOpen] = useState(false);
   const [isDeleteAccountDialogOpen, setIsDeleteAccountDialogOpen] = useState(false);
   const [isAccountSettingsOpen, setIsAccountSettingsOpen] = useState(false);
   const [isResetPasswordDialogOpen, setIsResetPasswordDialogOpen] = useState(false);
@@ -1046,10 +1045,6 @@ export default function App() {
                     <Link2 className="size-4 mr-2" />
                     Jira/Confluence
                   </Button>
-                  <Button onClick={() => setIsFeaturesDialogOpen(true)} variant="outline" className="bg-white/10 text-white border-white/20 hover:bg-white/20">
-                    <Settings className="size-4 mr-2" />
-                    Manage Features
-                  </Button>
                   <Button onClick={() => setIsAddDialogOpen(true)} className="bg-white text-indigo-900 hover:bg-white/90">
                     <Plus className="size-4 mr-2" />
                     Add Project
@@ -1076,6 +1071,7 @@ export default function App() {
                 <TabsTrigger value="board" className="data-[state=active]:bg-white data-[state=active]:text-indigo-900 text-white">Board View</TabsTrigger>
                 <TabsTrigger value="timeline" className="data-[state=active]:bg-white data-[state=active]:text-indigo-900 text-white">Timeline View</TabsTrigger>
                 <TabsTrigger value="features" className="data-[state=active]:bg-white data-[state=active]:text-indigo-900 text-white">Features Matrix</TabsTrigger>
+                <TabsTrigger value="products" className="data-[state=active]:bg-white data-[state=active]:text-indigo-900 text-white">Products</TabsTrigger>
                 <TabsTrigger value="audit" className="data-[state=active]:bg-white data-[state=active]:text-indigo-900 text-white">
                   <History className="size-4 mr-2" />
                   Activity Log
@@ -1089,33 +1085,58 @@ export default function App() {
               </TabsList>
 
               <TabsContent value="board" className="mt-6">
-                <ProductProjectBoard 
-                  products={products}
-                  features={features} 
-                  projects={filteredProjects}
-                  currentUser={currentUser}
-                  teamMembers={teamMembers}
-                  onUpdateProject={handleUpdateProject}
-                  onDeleteProject={handleDeleteProject}
-                  onOpenAtlassianSettings={() => setIsAtlassianDialogOpen(true)}
-                />
+                <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur p-6 md:p-8">
+                  <ProductProjectBoard 
+                    products={products}
+                    features={features} 
+                    projects={filteredProjects}
+                    currentUser={currentUser}
+                    teamMembers={teamMembers}
+                    onUpdateProject={handleUpdateProject}
+                    onDeleteProject={handleDeleteProject}
+                    onOpenAtlassianSettings={() => setIsAtlassianDialogOpen(true)}
+                  />
+                </div>
               </TabsContent>
 
               <TabsContent value="timeline" className="mt-6">
-                <TimelineView features={features} projects={projects} />
+                <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur p-6 md:p-8">
+                  <TimelineView features={features} projects={projects} />
+                </div>
               </TabsContent>
 
               <TabsContent value="features" className="mt-6">
-                <FeaturesMatrix products={products} features={features} projects={projects} />
+                <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur p-6 md:p-8">
+                  <FeaturesMatrix products={products} features={features} projects={projects} />
+                </div>
+              </TabsContent>
+
+              <TabsContent value="products" className="mt-6">
+                <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur p-6 md:p-8">
+                  <ProductDocsManager
+                    products={products}
+                    features={features}
+                    onAddProduct={handleAddProduct}
+                    onUpdateProduct={handleUpdateProduct}
+                    onDeleteProduct={handleDeleteProduct}
+                    onAddFeature={handleAddFeature}
+                    onUpdateFeature={handleUpdateFeature}
+                    onDeleteFeature={handleDeleteFeature}
+                  />
+                </div>
               </TabsContent>
 
               <TabsContent value="audit" className="mt-6">
-                <AuditLog entries={auditLog} />
+                <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur p-6 md:p-8">
+                  <AuditLog entries={auditLog} />
+                </div>
               </TabsContent>
 
               {isAdmin && (
                 <TabsContent value="admin" className="mt-6">
-                  <AdminPanel currentUserId={currentUser?.id} />
+                  <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur p-6 md:p-8">
+                    <AdminPanel currentUserId={currentUser?.id} />
+                  </div>
                 </TabsContent>
               )}
             </Tabs>
@@ -1126,19 +1147,6 @@ export default function App() {
               features={features}
               products={products}
               onAdd={handleAddProject}
-            />
-
-            <ManageFeaturesDialog
-              open={isFeaturesDialogOpen}
-              onOpenChange={setIsFeaturesDialogOpen}
-              products={products}
-              features={features}
-              onAddProduct={handleAddProduct}
-              onUpdateProduct={handleUpdateProduct}
-              onDeleteProduct={handleDeleteProduct}
-              onAdd={handleAddFeature}
-              onUpdate={handleUpdateFeature}
-              onDelete={handleDeleteFeature}
             />
 
             <AccountSettingsDialog

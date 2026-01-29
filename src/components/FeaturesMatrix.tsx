@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { CheckCircle2, Circle, Package, TrendingUp } from 'lucide-react';
-import { ScrollArea } from './ui/scroll-area';
+import { useTheme } from './ThemeProvider';
 
 interface FeaturesMatrixProps {
   products: ProductCatalog[];
@@ -12,6 +12,7 @@ interface FeaturesMatrixProps {
 }
 
 export function FeaturesMatrix({ products, features, projects }: FeaturesMatrixProps) {
+  const { theme } = useTheme();
   const productMap = new Map(products.map((product) => [product.id, product.name]));
   const sortedFeatures = [...features].sort((a, b) => {
     const orderA = a.displayOrder ?? Number.MAX_SAFE_INTEGER;
@@ -39,6 +40,10 @@ export function FeaturesMatrix({ products, features, projects }: FeaturesMatrixP
       deployed: project.deployedFeatures.length,
     };
   };
+
+  const gridTemplateColumns = `16rem 12rem repeat(${projects.length}, minmax(8rem, 1fr)) 8rem`;
+  const gridMinWidth = `${36 + projects.length * 8}rem`;
+  const stickyBg = theme === 'dark' ? '#0f172a' : '#ffffff';
 
   return (
     <div className="space-y-6">
@@ -97,40 +102,62 @@ export function FeaturesMatrix({ products, features, projects }: FeaturesMatrixP
           <CardTitle>Feature Usage Matrix</CardTitle>
         </CardHeader>
         <CardContent>
-          <ScrollArea className="h-[600px]">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-64 sticky left-0 bg-white z-10">Feature</TableHead>
-                  <TableHead className="w-40">Product</TableHead>
+          <div className="h-[600px] overflow-auto">
+            <div>
+              <div style={{ minWidth: gridMinWidth }} className="rounded-lg border border-white/10 bg-white/5">
+                <div
+                  className="grid text-sm font-medium border-b border-white/10"
+                  style={{ gridTemplateColumns }}
+                >
+                  <div
+                    className="sticky left-0 z-30 px-3 py-3 border-r border-white/10 shadow-[2px_0_8px_rgba(0,0,0,0.08)] dark:shadow-[2px_0_8px_rgba(0,0,0,0.45)]"
+                    style={{ backgroundColor: stickyBg }}
+                  >
+                    Feature
+                  </div>
+                  <div
+                    className="sticky z-20 px-3 py-3 border-r border-white/10 shadow-[2px_0_8px_rgba(0,0,0,0.08)] dark:shadow-[2px_0_8px_rgba(0,0,0,0.45)]"
+                    style={{ left: '16rem', backgroundColor: stickyBg }}
+                  >
+                    Product
+                  </div>
                   {projects.map(project => (
-                    <TableHead key={project.id} className="min-w-32">
+                    <div key={project.id} className="px-3 py-3">
                       <div className="truncate">{project.name}</div>
                       <div className="text-slate-500">{project.status}</div>
-                    </TableHead>
+                    </div>
                   ))}
-                  <TableHead className="w-32">Usage</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+                  <div className="px-3 py-3">Usage</div>
+                </div>
+
                 {sortedFeatures.map((feature) => {
                   const stats = getFeatureStats(feature.id);
                   return (
-                    <TableRow key={feature.id}>
-                      <TableCell className="sticky left-0 bg-white z-10">
-                        <div>
-                          <div className="text-slate-900">{feature.name}</div>
-                          <div className="text-slate-600">{feature.description}</div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">{productMap.get(feature.productId) || 'Unknown'}</Badge>
-                      </TableCell>
+                    <div
+                      key={feature.id}
+                      className="grid border-b border-white/10"
+                      style={{ gridTemplateColumns }}
+                    >
+                      <div
+                        className="sticky left-0 z-20 px-3 py-3 border-r border-white/10 shadow-[2px_0_8px_rgba(0,0,0,0.08)] dark:shadow-[2px_0_8px_rgba(0,0,0,0.45)]"
+                        style={{ backgroundColor: stickyBg }}
+                      >
+                        <div className="text-white font-semibold">{feature.name}</div>
+                        <div className="text-white/70">{feature.description}</div>
+                      </div>
+                      <div
+                        className="sticky z-10 px-3 py-3 border-r border-white/10 flex items-center shadow-[2px_0_8px_rgba(0,0,0,0.08)] dark:shadow-[2px_0_8px_rgba(0,0,0,0.45)]"
+                        style={{ left: '16rem', backgroundColor: stickyBg }}
+                      >
+                        <Badge variant="secondary" className="max-w-full whitespace-normal break-words text-left leading-snug">
+                          {productMap.get(feature.productId) || 'Unknown'}
+                        </Badge>
+                      </div>
                       {projects.map(project => {
                         const isUsed = project.featuresUsed.includes(feature.id);
                         const isDeployed = project.deployedFeatures.includes(feature.id);
                         return (
-                          <TableCell key={project.id} className="text-center">
+                          <div key={project.id} className="flex items-center justify-center px-3 py-3">
                             {isUsed ? (
                               <div className="flex items-center justify-center">
                                 {isDeployed ? (
@@ -140,25 +167,23 @@ export function FeaturesMatrix({ products, features, projects }: FeaturesMatrixP
                                 )}
                               </div>
                             ) : (
-                              <div className="flex items-center justify-center">
-                                <div className="size-1.5 rounded-full bg-slate-200" />
-                              </div>
+                              <div className="size-1.5 rounded-full bg-slate-200" />
                             )}
-                          </TableCell>
+                          </div>
                         );
                       })}
-                      <TableCell>
+                      <div className="px-3 py-3">
                         <div className="space-y-1">
                           <div className="text-slate-900">{stats.total} projects</div>
                           <div className="text-slate-600">{stats.deployed} deployed</div>
                         </div>
-                      </TableCell>
-                    </TableRow>
+                      </div>
+                    </div>
                   );
                 })}
-              </TableBody>
-            </Table>
-          </ScrollArea>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
