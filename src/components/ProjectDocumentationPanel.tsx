@@ -1,7 +1,7 @@
 import { ProductCatalog, ProductFeature, Project } from '../App';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
-import { FileText, Copy, Check, FileUp, BookOpen } from 'lucide-react';
+import { FileText, Copy, Check, BookOpen } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner@2.0.3';
 import * as api from '../utils/api';
@@ -34,7 +34,7 @@ export function ProjectDocumentationPanel({
     .map(productId => productNameById.get(productId))
     .filter((name): name is string => Boolean(name));
 
-  const documentationText = `Project Documentation
+  const documentationText = `Project User Manual
 
 Enabled Products:
 ${enabledProducts.length > 0 ? enabledProducts.map(name => `✓ ${name}`).join('\n') : 'None'}
@@ -43,8 +43,7 @@ Status:
 ${deployedCount} / ${totalCount} features deployed
 
 Actions:
-[ Generate User Manual ]
-[ Upload Supporting Docs ] (optional)`;
+[ Generate User Manual ]`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(documentationText);
@@ -134,7 +133,7 @@ Actions:
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="size-5 text-purple-600" />
-            Project Documentation
+            Project User Manual
           </DialogTitle>
         </DialogHeader>
 
@@ -193,7 +192,6 @@ Actions:
                 <div className="text-slate-500 mb-2">Actions:</div>
                 <div className="space-y-1 pl-2">
                   <div className="text-white">[ Generate User Manual ]</div>
-                  <div className="text-white">[ Upload Supporting Docs ] <span className="text-slate-500">(optional)</span></div>
                 </div>
               </div>
             </div>
@@ -215,19 +213,6 @@ Actions:
                   {canGenerate
                     ? 'Auto-generate documentation based on enabled features'
                     : 'Add product features to enable manual generation'}
-                </span>
-              </div>
-            </Button>
-
-            <Button
-              className="w-full justify-start gap-2 h-auto py-4"
-              variant="outline"
-            >
-              <FileUp className="size-5" />
-              <div className="flex flex-col items-start">
-                <span className="font-semibold">Upload Supporting Docs</span>
-                <span className="text-sm text-slate-500 font-normal">
-                  Add additional documentation files (optional)
                 </span>
               </div>
             </Button>

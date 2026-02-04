@@ -1041,7 +1041,11 @@ export default function App() {
                   <p className="text-white/90">Track product feature deployment across projects</p>
                 </div>
                 <div className="flex gap-2">
-                  <Button onClick={() => setIsAtlassianDialogOpen(true)} variant="outline" className="bg-white/10 text-white border-white/20 hover:bg-white/20">
+                  <Button
+                    variant="outline"
+                    className="bg-white/10 text-white border-white/20 opacity-50 cursor-not-allowed"
+                    disabled
+                  >
                     <Link2 className="size-4 mr-2" />
                     Jira/Confluence
                   </Button>

@@ -3,6 +3,7 @@ import { supabase } from './supabase/client';
 
 // Use VITE_API_URL if available, otherwise fall back to default
 const API_URL = import.meta.env.VITE_API_URL || `https://${projectId}.supabase.co/functions/v1/make-server-bbcbebd7`;
+const SERVER_PREFIX = /\/server\/?$/.test(API_URL) ? '' : '/server';
 export { API_URL };
 const REQUEST_TIMEOUT = 30000; // 30 seconds
 
@@ -277,14 +278,14 @@ export async function createAuditEntry(entry: any) {
 // ============================================
 
 export async function generateUserManual(projectId: string, idempotencyKey?: string) {
-  return fetchWithAuth<{ jobId: string }>('/docs/generate', {
+  return fetchWithAuth<{ jobId: string }>(`${SERVER_PREFIX}/docs/generate`, {
     method: 'POST',
     body: JSON.stringify({ projectId, idempotencyKey }),
   });
 }
 
 export async function getDocumentationJob(jobId: string) {
-  return fetchWithAuth<{ job: any }>(`/docs/jobs/${jobId}`);
+  return fetchWithAuth<{ job: any }>(`${SERVER_PREFIX}/docs/jobs/${jobId}`);
 }
 
 // ============================================

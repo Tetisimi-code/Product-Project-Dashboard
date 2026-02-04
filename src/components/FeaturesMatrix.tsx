@@ -44,6 +44,10 @@ export function FeaturesMatrix({ products, features, projects }: FeaturesMatrixP
   const gridTemplateColumns = `16rem 12rem repeat(${projects.length}, minmax(8rem, 1fr)) 8rem`;
   const gridMinWidth = `${36 + projects.length * 8}rem`;
   const stickyBg = theme === 'dark' ? '#0f172a' : '#ffffff';
+  const gridContainerClass = theme === 'dark' ? 'border-white/10 bg-white/5' : 'border-slate-200 bg-white';
+  const gridRowBorderClass = theme === 'dark' ? 'border-white/10' : 'border-slate-200';
+  const featureNameClass = theme === 'dark' ? 'text-white' : 'text-slate-900';
+  const featureDescClass = theme === 'dark' ? 'text-white/70' : 'text-slate-600';
 
   return (
     <div className="space-y-6">
@@ -104,19 +108,22 @@ export function FeaturesMatrix({ products, features, projects }: FeaturesMatrixP
         <CardContent>
           <div className="h-[600px] overflow-auto">
             <div>
-              <div style={{ minWidth: gridMinWidth }} className="rounded-lg border border-white/10 bg-white/5">
+              <div
+                style={{ minWidth: gridMinWidth }}
+                className={`rounded-lg border ${gridContainerClass}`}
+              >
                 <div
-                  className="grid text-sm font-medium border-b border-white/10"
+                  className={`grid text-sm font-medium border-b ${gridRowBorderClass}`}
                   style={{ gridTemplateColumns }}
                 >
                   <div
-                    className="sticky left-0 z-30 px-3 py-3 border-r border-white/10 shadow-[2px_0_8px_rgba(0,0,0,0.08)] dark:shadow-[2px_0_8px_rgba(0,0,0,0.45)]"
+                    className={`sticky left-0 z-30 px-3 py-3 border-r ${gridRowBorderClass} shadow-[2px_0_8px_rgba(0,0,0,0.08)] dark:shadow-[2px_0_8px_rgba(0,0,0,0.45)]`}
                     style={{ backgroundColor: stickyBg }}
                   >
                     Feature
                   </div>
                   <div
-                    className="sticky z-20 px-3 py-3 border-r border-white/10 shadow-[2px_0_8px_rgba(0,0,0,0.08)] dark:shadow-[2px_0_8px_rgba(0,0,0,0.45)]"
+                    className={`sticky z-20 px-3 py-3 border-r ${gridRowBorderClass} shadow-[2px_0_8px_rgba(0,0,0,0.08)] dark:shadow-[2px_0_8px_rgba(0,0,0,0.45)]`}
                     style={{ left: '16rem', backgroundColor: stickyBg }}
                   >
                     Product
@@ -135,18 +142,18 @@ export function FeaturesMatrix({ products, features, projects }: FeaturesMatrixP
                   return (
                     <div
                       key={feature.id}
-                      className="grid border-b border-white/10"
+                      className={`grid border-b ${gridRowBorderClass}`}
                       style={{ gridTemplateColumns }}
                     >
                       <div
-                        className="sticky left-0 z-20 px-3 py-3 border-r border-white/10 shadow-[2px_0_8px_rgba(0,0,0,0.08)] dark:shadow-[2px_0_8px_rgba(0,0,0,0.45)]"
+                        className={`sticky left-0 z-20 px-3 py-3 border-r ${gridRowBorderClass} shadow-[2px_0_8px_rgba(0,0,0,0.08)] dark:shadow-[2px_0_8px_rgba(0,0,0,0.45)]`}
                         style={{ backgroundColor: stickyBg }}
                       >
-                        <div className="text-white font-semibold">{feature.name}</div>
-                        <div className="text-white/70">{feature.description}</div>
+                        <div className={`${featureNameClass} font-semibold`}>{feature.name}</div>
+                        <div className={featureDescClass}>{feature.description}</div>
                       </div>
                       <div
-                        className="sticky z-10 px-3 py-3 border-r border-white/10 flex items-center shadow-[2px_0_8px_rgba(0,0,0,0.08)] dark:shadow-[2px_0_8px_rgba(0,0,0,0.45)]"
+                        className={`sticky z-10 px-3 py-3 border-r ${gridRowBorderClass} flex items-center shadow-[2px_0_8px_rgba(0,0,0,0.08)] dark:shadow-[2px_0_8px_rgba(0,0,0,0.45)]`}
                         style={{ left: '16rem', backgroundColor: stickyBg }}
                       >
                         <Badge variant="secondary" className="max-w-full whitespace-normal break-words text-left leading-snug">

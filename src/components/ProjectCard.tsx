@@ -166,28 +166,20 @@ export function ProjectCard({ project, products, features, currentUser, teamMemb
                   variant="outline"
                   size="sm"
                   onClick={() => window.open((project as any).jiraUrl, '_blank')}
-                  className="flex items-center gap-1"
+                  className="flex items-center gap-1 opacity-50 cursor-not-allowed"
+                  disabled
                 >
                   <ExternalLink className="size-3" />
                   Jira: {(project as any).jiraKey}
                 </Button>
-              ) : (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setIsJiraLinkDialogOpen(true)}
-                  className="flex items-center gap-1 text-muted-foreground hover:text-foreground dark:text-white/60 dark:hover:text-white"
-                >
-                  <Link2 className="size-3" />
-                  Link to Jira
-                </Button>
-              )}
+              ) : null}
               {(project as any).confluencePageUrl && (
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => window.open((project as any).confluencePageUrl, '_blank')}
-                  className="flex items-center gap-1"
+                  className="flex items-center gap-1 opacity-50 cursor-not-allowed"
+                  disabled
                 >
                   <ExternalLink className="size-3" />
                   Confluence Docs
@@ -200,7 +192,7 @@ export function ProjectCard({ project, products, features, currentUser, teamMemb
                 className="flex items-center gap-1"
               >
                 <FileText className="size-3" />
-                Documentation
+                User Manual
               </Button>
             </div>
           </div>
