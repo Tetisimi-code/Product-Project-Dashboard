@@ -79,13 +79,13 @@ Actions:
       }
 
       const jobId = startResult.data.jobId;
-      const maxAttempts = 30;
       const pollDelayMs = 2000;
-      let attempt = 0;
+      const pollTimeoutMs = 4000;
+      const pollDeadline = Date.now() + pollTimeoutMs;
       let jobStatus = 'pending';
       let downloadUrl = '';
 
-      while (attempt < maxAttempts) {
+      while (Date.now() < pollDeadline) {
         const jobResult = await api.getDocumentationJob(jobId);
         if (jobResult.error) {
           throw new Error(jobResult.error);
@@ -104,7 +104,6 @@ Actions:
           throw new Error(job.error || 'Manual generation failed');
         }
 
-        attempt += 1;
         await new Promise(resolve => setTimeout(resolve, pollDelayMs));
       }
 
