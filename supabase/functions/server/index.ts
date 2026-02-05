@@ -1264,9 +1264,11 @@ app.post("/server/docs/generate", async (c) => {
       }
     };
 
-    runJob().catch((error) => {
-      console.log(`Doc job background error: ${error}`);
-    });
+    try {
+      await runJob();
+    } catch (error) {
+      console.log(`Doc job synchronous error: ${error}`);
+    }
 
     return c.json({ jobId });
   } catch (error) {
