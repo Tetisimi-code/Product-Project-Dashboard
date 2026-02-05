@@ -3,7 +3,6 @@ import { supabase } from './supabase/client';
 
 // Use VITE_API_URL if available, otherwise fall back to default
 const API_URL = import.meta.env.VITE_API_URL || `https://${projectId}.supabase.co/functions/v1/make-server-bbcbebd7`;
-const SERVER_PREFIX = /\/server\/?$/.test(API_URL) ? '' : '/server';
 export { API_URL };
 const REQUEST_TIMEOUT = 30000; // 30 seconds
 
@@ -141,12 +140,12 @@ async function fetchWithAuth<T>(
     if (error instanceof TypeError) {
       if (error.message.includes('fetch')) {
         return { 
-          error: 'Unable to connect to the server. Please check your internet connection and try again.' 
+          error: `Unable to connect to the server (${API_URL}${endpoint}). Please check your internet connection and try again.` 
         };
       }
       if (error.message.includes('timeout')) {
         return { 
-          error: 'Request timeout. The server took too long to respond. Please try again.' 
+          error: `Request timeout (${API_URL}${endpoint}). The server took too long to respond. Please try again.` 
         };
       }
     }
@@ -277,15 +276,33 @@ export async function createAuditEntry(entry: any) {
 // DOCUMENTATION API
 // ============================================
 
+const DOC_PRIMARY_PREFIX = '/docs';
+const DOC_FALLBACK_PREFIX = '/server/docs';
+
+async function fetchDocsWithFallback<T>(path: string, options: RequestInit = {}) {
+  const primary = await fetchWithAuth<T>(`${DOC_PRIMARY_PREFIX}${path}`, options);
+  if (!primary.error) return primary;
+
+  const shouldFallback =
+    primary.error.includes('Resource not found') ||
+    primary.error.includes('Unable to connect');
+
+  if (!shouldFallback) {
+    return primary;
+  }
+
+  return fetchWithAuth<T>(`${DOC_FALLBACK_PREFIX}${path}`, options);
+}
+
 export async function generateUserManual(projectId: string, idempotencyKey?: string) {
-  return fetchWithAuth<{ jobId: string }>(`${SERVER_PREFIX}/docs/generate`, {
+  return fetchDocsWithFallback<{ jobId: string }>('/generate', {
     method: 'POST',
     body: JSON.stringify({ projectId, idempotencyKey }),
   });
 }
 
 export async function getDocumentationJob(jobId: string) {
-  return fetchWithAuth<{ job: any }>(`${SERVER_PREFIX}/docs/jobs/${jobId}`);
+  return fetchDocsWithFallback<{ job: any }>(`/jobs/${jobId}`);
 }
 
 // ============================================

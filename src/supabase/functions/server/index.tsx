@@ -16,6 +16,7 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 const DOC_SERVICE_URL = Deno.env.get('DOC_SERVICE_URL') || 'http://localhost:8000';
 const DOC_TEMPLATE_URL = Deno.env.get('DOC_TEMPLATE_URL') || '';
 const DOC_SIGNED_URL_TTL = Number(Deno.env.get('DOC_SIGNED_URL_TTL') || '3600');
+const DOC_SERVICE_TIMEOUT_MS = Number(Deno.env.get('DOC_SERVICE_TIMEOUT_MS') || '15000');
 
 // Enable logger
 app.use('*', logger(console.log));
@@ -76,6 +77,19 @@ const checkUrlReachable = async (url: string): Promise<boolean> => {
     return getResponse.ok;
   } catch {
     return false;
+  }
+};
+
+const fetchWithTimeout = async (url: string, options: RequestInit = {}, timeoutMs = DOC_SERVICE_TIMEOUT_MS) => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, { ...options, signal: controller.signal });
+    clearTimeout(timeoutId);
+    return response;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    throw error;
   }
 };
 
@@ -1201,7 +1215,7 @@ app.post("/server/docs/generate", async (c) => {
           module_urls: manualUrls,
         };
 
-        const response = await fetch(`${DOC_SERVICE_URL}/merge`, {
+        const response = await fetchWithTimeout(`${DOC_SERVICE_URL}/merge`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
@@ -1253,7 +1267,9 @@ app.post("/server/docs/generate", async (c) => {
     if (c.executionCtx?.waitUntil) {
       c.executionCtx.waitUntil(runJob());
     } else {
-      await runJob();
+      runJob().catch((error) => {
+        console.log(`Doc job background error: ${error}`);
+      });
     }
 
     return c.json({ jobId });

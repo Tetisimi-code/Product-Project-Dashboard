@@ -33,6 +33,9 @@ export function ProjectDocumentationPanel({
   const enabledProducts = Array.from(new Set(usedFeatures.map(feature => feature.productId)))
     .map(productId => productNameById.get(productId))
     .filter((name): name is string => Boolean(name));
+  const enabledProductDetails = Array.from(new Set(usedFeatures.map(feature => feature.productId)))
+    .map(productId => products.find(product => product.id === productId))
+    .filter((product): product is ProductCatalog => Boolean(product));
 
   const documentationText = `Project User Manual
 
@@ -61,8 +64,16 @@ Actions:
 
     setIsGenerating(true);
     try {
+      const manualTimeoutMs = 4000;
+      const manualTimeout = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Manual generation timed out')), manualTimeoutMs);
+      });
+
       const idempotencyKey = `${project.id}:${usedFeatures.map(feature => feature.id).join(',')}`;
-      const startResult = await api.generateUserManual(project.id, idempotencyKey);
+      const startResult = await Promise.race([
+        api.generateUserManual(project.id, idempotencyKey),
+        manualTimeout,
+      ]);
       if (startResult.error || !startResult.data?.jobId) {
         throw new Error(startResult.error || 'Manual generation failed');
       }
@@ -119,9 +130,35 @@ Actions:
       toast.success('User manual downloaded', { description: project.name });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to generate manual';
-      toast.error('Generate User Manual failed', {
-        description: message,
-      });
+      const fallbackManuals = enabledProductDetails.filter(product => product.manualUrl);
+      if (fallbackManuals.length > 0) {
+        toast.error('Generate User Manual failed', {
+          description: `${message}. Downloading individual manuals instead.`,
+        });
+
+        for (const product of fallbackManuals) {
+          if (!product.manualUrl) continue;
+          try {
+            const response = await fetch(product.manualUrl);
+            if (!response.ok) continue;
+            const blob = await response.blob();
+            const objectUrl = window.URL.createObjectURL(blob);
+            const anchor = document.createElement('a');
+            anchor.href = objectUrl;
+            anchor.download = `${product.name.replace(/[^a-z0-9-_]+/gi, '-')}-manual.docx`;
+            document.body.appendChild(anchor);
+            anchor.click();
+            anchor.remove();
+            window.URL.revokeObjectURL(objectUrl);
+          } catch {
+            // Ignore per-product download errors
+          }
+        }
+      } else {
+        toast.error('Generate User Manual failed', {
+          description: message,
+        });
+      }
     } finally {
       setIsGenerating(false);
     }
