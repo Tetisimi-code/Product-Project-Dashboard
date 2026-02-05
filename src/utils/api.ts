@@ -276,8 +276,9 @@ export async function createAuditEntry(entry: any) {
 // DOCUMENTATION API
 // ============================================
 
+const HAS_SERVER_PREFIX = /\/server\/?$/.test(API_URL);
 const DOC_PRIMARY_PREFIX = '/docs';
-const DOC_FALLBACK_PREFIX = '/server/docs';
+const DOC_FALLBACK_PREFIX = HAS_SERVER_PREFIX ? '/docs' : '/server/docs';
 
 async function fetchDocsWithFallback<T>(path: string, options: RequestInit = {}) {
   const primary = await fetchWithAuth<T>(`${DOC_PRIMARY_PREFIX}${path}`, options);
