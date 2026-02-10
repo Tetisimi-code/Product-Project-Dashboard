@@ -64,7 +64,7 @@ Actions:
 
     setIsGenerating(true);
     try {
-      const manualTimeoutMs = 4000;
+      const manualTimeoutMs = 10000;
       const manualTimeout = new Promise<never>((_, reject) => {
         setTimeout(() => reject(new Error('Manual generation timed out')), manualTimeoutMs);
       });
@@ -80,7 +80,7 @@ Actions:
 
       const jobId = startResult.data.jobId;
       const pollDelayMs = 2000;
-      const pollTimeoutMs = 4000;
+      const pollTimeoutMs = 10000;
       const pollDeadline = Date.now() + pollTimeoutMs;
       let jobStatus = 'pending';
       let downloadUrl = '';
