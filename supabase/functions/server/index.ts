@@ -1183,7 +1183,19 @@ app.post("/server/docs/generate", async (c) => {
     if (existingJobId) {
       const existingJob = await kv.get(`doc_job_${existingJobId}`);
       if (existingJob && existingJob.status !== 'failed') {
-        return c.json({ jobId: existingJobId });
+        const lastUpdated = existingJob.updatedAt || existingJob.createdAt;
+        const isStale = lastUpdated
+          ? (Date.now() - Date.parse(lastUpdated)) > 2 * 60 * 1000
+          : false;
+        if (!isStale) {
+          return c.json({ jobId: existingJobId });
+        }
+        await kv.set(`doc_job_${existingJobId}`, {
+          ...existingJob,
+          status: 'failed',
+          error: 'Stale job detected. Please retry.',
+          updatedAt: new Date().toISOString(),
+        });
       }
     }
 
@@ -1197,6 +1209,7 @@ app.post("/server/docs/generate", async (c) => {
       manualUrls,
       idempotencyKey: resolvedIdempotencyKey,
       createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     });
     await kv.set(idempotencyMapKey, jobId);
 
