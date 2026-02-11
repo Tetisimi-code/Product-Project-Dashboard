@@ -52,10 +52,17 @@ export interface DeploymentNote {
   statusChange?: string;
 }
 
+export interface AssignedUser {
+  id?: string;
+  name: string;
+  email?: string;
+}
+
 export interface FeatureDeploymentInfo {
   featureId: string;
   status: 'not-started' | 'in-development' | 'in-testing' | 'staging' | 'deployed' | 'blocked' | 'rolled-back';
   assignedTo?: string;
+  assignedUsers?: AssignedUser[];
   notes: DeploymentNote[];
   startedDate?: string;
   deployedDate?: string;
@@ -74,6 +81,7 @@ export interface Project {
   description: string;
   featureDeployments?: Record<string, FeatureDeploymentInfo>; // keyed by featureId
   location?: string; // Optional: City, Country or Region
+  assignees?: AssignedUser[];
 }
 
 const mockProducts: ProductCatalog[] = [
@@ -916,10 +924,35 @@ export default function App() {
     
     const userEmail = currentUser.email?.toLowerCase();
     const userName = currentUser.user_metadata?.name?.toLowerCase();
+    const userId = currentUser.id;
+
+    if (project.assignees?.some(assignee => {
+      const assigneeEmail = assignee.email?.toLowerCase();
+      const assigneeName = assignee.name?.toLowerCase();
+      return (
+        (assignee.id && userId && assignee.id === userId) ||
+        (assigneeEmail && assigneeEmail === userEmail) ||
+        (assigneeName && assigneeName === userName)
+      );
+    })) {
+      return true;
+    }
     
     // Check if user has any features assigned to them in this project
     if (project.featureDeployments) {
       for (const deployment of Object.values(project.featureDeployments)) {
+        if (deployment.assignedUsers?.some(assignee => {
+          const assigneeEmail = assignee.email?.toLowerCase();
+          const assigneeName = assignee.name?.toLowerCase();
+          return (
+            (assignee.id && userId && assignee.id === userId) ||
+            (assigneeEmail && assigneeEmail === userEmail) ||
+            (assigneeName && assigneeName === userName)
+          );
+        })) {
+          return true;
+        }
+
         if (deployment.assignedTo) {
           const assignedTo = deployment.assignedTo.toLowerCase();
           if (assignedTo === userEmail || assignedTo === userName || 
@@ -1095,7 +1128,7 @@ export default function App() {
                     features={features} 
                     projects={filteredProjects}
                     currentUser={currentUser}
-                    teamMembers={teamMembers}
+                    isAdmin={isAdmin}
                     onUpdateProject={handleUpdateProject}
                     onDeleteProject={handleDeleteProject}
                     onOpenAtlassianSettings={() => setIsAtlassianDialogOpen(true)}

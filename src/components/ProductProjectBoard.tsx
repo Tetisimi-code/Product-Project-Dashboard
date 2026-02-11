@@ -3,20 +3,19 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { ScrollArea } from './ui/scroll-area';
 import { ProjectCard } from './ProjectCard';
-import { TeamMember } from '../utils/api';
 
 interface ProductProjectBoardProps {
   products: ProductCatalog[];
   features: ProductFeature[];
   projects: Project[];
   currentUser: any;
-  teamMembers: TeamMember[];
+  isAdmin: boolean;
   onUpdateProject: (project: Project) => void;
   onDeleteProject: (projectId: string) => void;
   onOpenAtlassianSettings?: () => void;
 }
 
-export function ProductProjectBoard({ products, features, projects, currentUser, teamMembers, onUpdateProject, onDeleteProject, onOpenAtlassianSettings }: ProductProjectBoardProps) {
+export function ProductProjectBoard({ products, features, projects, currentUser, isAdmin, onUpdateProject, onDeleteProject, onOpenAtlassianSettings }: ProductProjectBoardProps) {
   const sortedProducts = [...products].sort((a, b) => {
     const orderA = a.displayOrder ?? Number.MAX_SAFE_INTEGER;
     const orderB = b.displayOrder ?? Number.MAX_SAFE_INTEGER;
@@ -114,7 +113,7 @@ export function ProductProjectBoard({ products, features, projects, currentUser,
                     products={products}
                     features={features}
                     currentUser={currentUser}
-                    teamMembers={teamMembers}
+                    isAdmin={isAdmin}
                     onUpdate={onUpdateProject}
                     onDelete={onDeleteProject}
                     onOpenAtlassianSettings={onOpenAtlassianSettings}

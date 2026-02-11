@@ -1370,6 +1370,33 @@ app.get("/server/team-members", async (c) => {
   }
 });
 
+// List all users (authenticated)
+app.get("/server/users", async (c) => {
+  try {
+    const user = await verifyAuth(c.req.header('Authorization'));
+    if (!user) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const { data: { users }, error } = await supabase.auth.admin.listUsers();
+    if (error) {
+      console.log(`Error listing users: ${error.message}`);
+      return c.json({ error: "Failed to list users" }, 500);
+    }
+
+    const summaries = (users || []).map((u: any) => ({
+      id: u.id,
+      name: u.user_metadata?.name || u.email?.split('@')[0] || 'Unknown',
+      email: u.email || undefined,
+    }));
+
+    return c.json({ users: summaries });
+  } catch (error) {
+    console.log(`Error fetching users: ${error}`);
+    return c.json({ error: "Failed to fetch users" }, 500);
+  }
+});
+
 // List all users (admin only)
 app.get("/server/admin/users", async (c) => {
   try {

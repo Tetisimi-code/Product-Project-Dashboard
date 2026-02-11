@@ -1,17 +1,15 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
-import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Badge } from './ui/badge';
 import { ScrollArea } from './ui/scroll-area';
 import { Separator } from './ui/separator';
-import { ProductFeature, FeatureDeploymentInfo, DeploymentNote, Project } from '../App';
-import { Calendar, User, Clock, CheckCircle2, AlertCircle, Code, TestTube, Rocket, Ban, Undo } from 'lucide-react';
+import { ProductFeature, FeatureDeploymentInfo, DeploymentNote, Project, AssignedUser } from '../App';
+import { Calendar, User, Clock, CheckCircle2, AlertCircle, Code, TestTube, Rocket, Ban, Undo, UserPlus, UserMinus, X } from 'lucide-react';
 import { formatDistance } from 'date-fns';
-import { TeamMember } from '../utils/api';
+import * as api from '../utils/api';
 
 interface FeatureDeploymentDialogProps {
   open: boolean;
@@ -19,7 +17,7 @@ interface FeatureDeploymentDialogProps {
   feature: ProductFeature;
   project: Project;
   currentUser: any;
-  teamMembers: TeamMember[];
+  isAdmin: boolean;
   onUpdate: (project: Project) => void;
 }
 
@@ -39,11 +37,13 @@ export function FeatureDeploymentDialog({
   feature, 
   project, 
   currentUser,
-  teamMembers,
+  isAdmin,
   onUpdate 
 }: FeatureDeploymentDialogProps) {
   const [noteText, setNoteText] = useState('');
-  const [assignee, setAssignee] = useState('');
+  const [users, setUsers] = useState<AssignedUser[]>([]);
+  const [mentionQuery, setMentionQuery] = useState('');
+  const [mentionOpen, setMentionOpen] = useState(false);
 
   // Get or initialize deployment info for this feature
   const getDeploymentInfo = (): FeatureDeploymentInfo => {
@@ -70,6 +70,39 @@ export function FeatureDeploymentDialog({
   };
 
   const deploymentInfo = getDeploymentInfo();
+  const assignedUsers: AssignedUser[] = deploymentInfo.assignedUsers
+    ?? (deploymentInfo.assignedTo ? [{ name: deploymentInfo.assignedTo }] : []);
+  const currentUserId = currentUser?.id;
+  const currentUserEmail = currentUser?.email;
+  const currentUserName = currentUser?.user_metadata?.name || currentUserEmail?.split('@')[0] || 'User';
+  const currentAssignee: AssignedUser | null = currentUser
+    ? { id: currentUserId, name: currentUserName, email: currentUserEmail }
+    : null;
+  const isCurrentUserAssigned = currentAssignee
+    ? assignedUsers.some(assignee =>
+        (assignee.id && currentAssignee.id && assignee.id === currentAssignee.id) ||
+        (assignee.email && currentAssignee.email && assignee.email === currentAssignee.email) ||
+        assignee.name === currentAssignee.name
+      )
+    : false;
+
+  const isSameAssignee = (assignee: AssignedUser, target: AssignedUser | null) => {
+    if (!target) return false;
+    return (
+      (assignee.id && target.id && assignee.id === target.id) ||
+      (assignee.email && target.email && assignee.email === target.email) ||
+      assignee.name === target.name
+    );
+  };
+
+  useEffect(() => {
+    if (!open) return;
+    api.getUsers().then(result => {
+      if (result.data?.users) {
+        setUsers(result.data.users);
+      }
+    });
+  }, [open]);
 
   const handleStatusChange = (newStatus: FeatureDeploymentInfo['status']) => {
     const userName = currentUser?.user_metadata?.name || currentUser?.email?.split('@')[0] || 'User';
@@ -117,6 +150,12 @@ export function FeatureDeploymentDialog({
     if (!noteText.trim()) return;
 
     const userName = currentUser?.user_metadata?.name || currentUser?.email?.split('@')[0] || 'User';
+    const normalizedExisting = new Set(assignedUsers.map(assignee => assignee.name.toLowerCase()));
+    const normalizedText = noteText.toLowerCase();
+    const newMentions = users
+      .filter(user => normalizedText.includes(`@${user.name.toLowerCase()}`))
+      .filter(user => !normalizedExisting.has(user.name.toLowerCase()))
+      .map(user => ({ id: user.id, name: user.name, email: user.email }));
     
     const newNote: DeploymentNote = {
       id: `note-${Date.now()}-${Math.random()}`,
@@ -128,6 +167,8 @@ export function FeatureDeploymentDialog({
     const updatedInfo: FeatureDeploymentInfo = {
       ...deploymentInfo,
       notes: [...deploymentInfo.notes, newNote],
+      assignedUsers: [...assignedUsers, ...newMentions],
+      assignedTo: undefined,
       lastUpdated: new Date().toISOString(),
     };
 
@@ -143,10 +184,53 @@ export function FeatureDeploymentDialog({
     setNoteText('');
   };
 
-  const handleAssigneeChange = (newAssignee: string) => {
+  const handleNoteChange = (value: string) => {
+    setNoteText(value);
+    const cursorIndex = value.length;
+    const slice = value.slice(0, cursorIndex);
+    const atIndex = slice.lastIndexOf('@');
+    if (atIndex === -1) {
+      setMentionOpen(false);
+      setMentionQuery('');
+      return;
+    }
+    const query = slice.slice(atIndex + 1);
+    if (query.includes(' ') || query.includes('\n')) {
+      setMentionOpen(false);
+      setMentionQuery('');
+      return;
+    }
+    setMentionQuery(query);
+    setMentionOpen(true);
+  };
+
+  const filteredUsers = useMemo(() => {
+    if (!mentionOpen) return [];
+    const query = mentionQuery.trim().toLowerCase();
+    if (!query) return users.slice(0, 6);
+    return users
+      .filter(user => user.name.toLowerCase().startsWith(query))
+      .slice(0, 6);
+  }, [mentionOpen, mentionQuery, users]);
+
+  const insertMention = (user: AssignedUser) => {
+    const cursorIndex = noteText.length;
+    const before = noteText.slice(0, cursorIndex);
+    const atIndex = before.lastIndexOf('@');
+    if (atIndex === -1) return;
+    const after = noteText.slice(cursorIndex);
+    const nextValue = `${before.slice(0, atIndex)}@${user.name} ${after}`;
+    setNoteText(nextValue);
+    setMentionOpen(false);
+    setMentionQuery('');
+  };
+
+  const handleAssignSelf = () => {
+    if (!currentAssignee || isCurrentUserAssigned) return;
     const updatedInfo: FeatureDeploymentInfo = {
       ...deploymentInfo,
-      assignedTo: newAssignee || undefined,
+      assignedUsers: [...assignedUsers, currentAssignee],
+      assignedTo: undefined,
       lastUpdated: new Date().toISOString(),
     };
 
@@ -159,7 +243,58 @@ export function FeatureDeploymentDialog({
     };
 
     onUpdate(updatedProject);
-    setAssignee('');
+  };
+
+  const handleUnassignSelf = () => {
+    if (!currentAssignee) return;
+    const updatedInfo: FeatureDeploymentInfo = {
+      ...deploymentInfo,
+      assignedUsers: assignedUsers.filter(assignee =>
+        !(
+          (assignee.id && currentAssignee.id && assignee.id === currentAssignee.id) ||
+          (assignee.email && currentAssignee.email && assignee.email === currentAssignee.email) ||
+          assignee.name === currentAssignee.name
+        )
+      ),
+      assignedTo: undefined,
+      lastUpdated: new Date().toISOString(),
+    };
+
+    const updatedProject: Project = {
+      ...project,
+      featureDeployments: {
+        ...project.featureDeployments,
+        [feature.id]: updatedInfo,
+      },
+    };
+
+    onUpdate(updatedProject);
+  };
+
+  const handleRemoveAssignee = (assigneeToRemove: AssignedUser) => {
+    if (!isAdmin) return;
+    const updatedInfo: FeatureDeploymentInfo = {
+      ...deploymentInfo,
+      assignedUsers: assignedUsers.filter(assignee =>
+        !(
+          (assignee.id && assigneeToRemove.id && assignee.id === assigneeToRemove.id) ||
+          (assignee.email && assigneeToRemove.email && assignee.email === assigneeToRemove.email) ||
+          assignee.name === assigneeToRemove.name
+        )
+      ),
+      assignedTo: undefined,
+      lastUpdated: new Date().toISOString(),
+    };
+
+    const updatedProject: Project = {
+      ...project,
+      featureDeployments: {
+        ...project.featureDeployments,
+        [feature.id]: updatedInfo,
+      },
+    };
+
+    onUpdate(updatedProject);
   };
 
   const currentStatusConfig = deploymentStatuses.find(s => s.value === deploymentInfo.status) || deploymentStatuses[0];
@@ -188,50 +323,34 @@ export function FeatureDeploymentDialog({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Deployment Status</Label>
-              <Select 
-                value={deploymentInfo.status} 
-                onValueChange={(value) => handleStatusChange(value as FeatureDeploymentInfo['status'])}
+              <select
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                value={deploymentInfo.status}
+                onChange={(event) => handleStatusChange(event.target.value as FeatureDeploymentInfo['status'])}
               >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {deploymentStatuses.map((status) => {
-                    const Icon = status.icon;
-                    return (
-                      <SelectItem key={status.value} value={status.value}>
-                        <div className="flex items-center gap-2">
-                          <div className={`size-2 rounded-full ${status.color}`} />
-                          {status.label}
-                        </div>
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
+                {deploymentStatuses.map((status) => (
+                  <option key={status.value} value={status.value}>
+                    {status.label}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="space-y-2">
-              <Label>Assigned To</Label>
-              <Select 
-                value={deploymentInfo.assignedTo || 'none'} 
-                onValueChange={(value) => handleAssigneeChange(value === 'none' ? '' : value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select team member" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Unassigned</SelectItem>
-                  {teamMembers.map((member) => (
-                    <SelectItem key={member.id} value={member.name}>
-                      <div className="flex items-center gap-2">
-                        <User className="size-3" />
-                        {member.name}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label>Assigned</Label>
+              <div className="flex items-center gap-2">
+                {isCurrentUserAssigned ? (
+                  <Button variant="outline" size="sm" onClick={handleUnassignSelf}>
+                    <UserMinus className="size-3 mr-1" />
+                    Unassign me
+                  </Button>
+                ) : (
+                  <Button variant="outline" size="sm" onClick={handleAssignSelf}>
+                    <UserPlus className="size-3 mr-1" />
+                    Assign me
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
 
@@ -249,11 +368,28 @@ export function FeatureDeploymentDialog({
                 Deployed: {new Date(deploymentInfo.deployedDate).toLocaleDateString()}
               </Badge>
             )}
-            {deploymentInfo.assignedTo && (
-              <Badge variant="outline" className="gap-2">
-                <User className="size-3" />
-                {deploymentInfo.assignedTo}
-              </Badge>
+            {assignedUsers.length > 0 && (
+              assignedUsers.map(assignee => (
+                <Badge key={`${assignee.id || assignee.email || assignee.name}`} variant="outline" className="gap-2">
+                  <User className="size-3" />
+                  {assignee.name}
+                  {(isAdmin || isSameAssignee(assignee, currentAssignee)) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (isSameAssignee(assignee, currentAssignee)) {
+                          handleUnassignSelf();
+                        } else {
+                          handleRemoveAssignee(assignee);
+                        }
+                      }}
+                      className="ml-1 text-muted-foreground hover:text-foreground"
+                    >
+                      <X className="size-3" />
+                    </button>
+                  )}
+                </Badge>
+              ))
             )}
           </div>
 
@@ -262,12 +398,28 @@ export function FeatureDeploymentDialog({
           {/* Add Note Section */}
           <div className="space-y-3">
             <Label>Add Note</Label>
-            <Textarea
-              placeholder="Add updates, blockers, or any relevant information..."
-              value={noteText}
-              onChange={(e) => setNoteText(e.target.value)}
-              rows={3}
-            />
+            <div className="relative">
+              <Textarea
+                placeholder="Add updates, blockers, or any relevant information..."
+                value={noteText}
+                onChange={(e) => handleNoteChange(e.target.value)}
+                rows={3}
+              />
+              {mentionOpen && filteredUsers.length > 0 && (
+                <div className="absolute z-20 mt-2 w-full rounded-md border border-border bg-background shadow-lg">
+                  {filteredUsers.map(user => (
+                    <button
+                      key={user.id || user.name}
+                      type="button"
+                      className="w-full px-3 py-2 text-left text-sm hover:bg-muted"
+                      onClick={() => insertMention(user)}
+                    >
+                      {user.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <Button 
               onClick={handleAddNote} 
               disabled={!noteText.trim()}

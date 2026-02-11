@@ -8,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Checkbox } from './ui/checkbox';
 import { Slider } from './ui/slider';
 import { ProductCatalog, ProductFeature, Project } from '../App';
+import { Badge } from './ui/badge';
+import { UserPlus, UserMinus, X } from 'lucide-react';
 
 interface EditProjectDialogProps {
   open: boolean;
@@ -15,10 +17,12 @@ interface EditProjectDialogProps {
   project: Project | null;
   products: ProductCatalog[];
   features: ProductFeature[];
+  currentUser: any;
+  isAdmin: boolean;
   onUpdate: (project: Project) => void;
 }
 
-export function EditProjectDialog({ open, onOpenChange, project, products, features, onUpdate }: EditProjectDialogProps) {
+export function EditProjectDialog({ open, onOpenChange, project, products, features, currentUser, isAdmin, onUpdate }: EditProjectDialogProps) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [status, setStatus] = useState<Project['status']>('planning');
@@ -28,6 +32,7 @@ export function EditProjectDialog({ open, onOpenChange, project, products, featu
   const [location, setLocation] = useState('');
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
   const [deployedFeatures, setDeployedFeatures] = useState<string[]>([]);
+  const [assignees, setAssignees] = useState(project?.assignees || []);
 
   useEffect(() => {
     if (project) {
@@ -40,6 +45,7 @@ export function EditProjectDialog({ open, onOpenChange, project, products, featu
       setLocation(project.location || '');
       setSelectedFeatures(project.featuresUsed);
       setDeployedFeatures(project.deployedFeatures);
+      setAssignees(project.assignees || []);
     }
   }, [project]);
 
@@ -58,6 +64,7 @@ export function EditProjectDialog({ open, onOpenChange, project, products, featu
         location: location.trim() || undefined,
         featuresUsed: selectedFeatures,
         deployedFeatures: deployedFeatures.filter(id => selectedFeatures.includes(id)),
+        assignees,
       };
 
       onUpdate(updatedProject);
@@ -96,6 +103,39 @@ export function EditProjectDialog({ open, onOpenChange, project, products, featu
   }, {} as Record<string, ProductFeature[]>);
 
   if (!project) return null;
+
+  const currentUserId = currentUser?.id;
+  const currentUserEmail = currentUser?.email;
+  const currentUserName = currentUser?.user_metadata?.name || currentUserEmail?.split('@')[0] || 'User';
+  const currentAssignee = currentUser
+    ? { id: currentUserId, name: currentUserName, email: currentUserEmail }
+    : null;
+  const isSameAssignee = (assignee: { id?: string; name: string; email?: string }, target: { id?: string; name: string; email?: string } | null) => {
+    if (!target) return false;
+    return (
+      (assignee.id && target.id && assignee.id === target.id) ||
+      (assignee.email && target.email && assignee.email === target.email) ||
+      assignee.name === target.name
+    );
+  };
+  const isCurrentUserAssigned = currentAssignee
+    ? assignees.some(assignee => isSameAssignee(assignee, currentAssignee))
+    : false;
+
+  const handleAssignSelf = () => {
+    if (!currentAssignee || isCurrentUserAssigned) return;
+    setAssignees(prev => [...prev, currentAssignee]);
+  };
+
+  const handleUnassignSelf = () => {
+    if (!currentAssignee) return;
+    setAssignees(prev => prev.filter(assignee => !isSameAssignee(assignee, currentAssignee)));
+  };
+
+  const handleRemoveAssignee = (assigneeToRemove: { id?: string; name: string; email?: string }) => {
+    if (!isAdmin) return;
+    setAssignees(prev => prev.filter(assignee => !isSameAssignee(assignee, assigneeToRemove)));
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -195,6 +235,49 @@ export function EditProjectDialog({ open, onOpenChange, project, products, featu
                 <SelectItem value="UK/Ireland">UK/Ireland</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label>Project Assignments</Label>
+              {isCurrentUserAssigned ? (
+                <Button type="button" variant="ghost" size="sm" onClick={handleUnassignSelf} className="flex items-center gap-1">
+                  <UserMinus className="size-3" />
+                  Unassign me
+                </Button>
+              ) : (
+                <Button type="button" variant="ghost" size="sm" onClick={handleAssignSelf} className="flex items-center gap-1">
+                  <UserPlus className="size-3" />
+                  Assign me
+                </Button>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {assignees.length > 0 ? (
+                assignees.map(assignee => (
+                  <Badge key={`${assignee.id || assignee.email || assignee.name}`} variant="secondary" className="flex items-center gap-1">
+                    {assignee.name}
+                    {(isAdmin || isSameAssignee(assignee, currentAssignee)) && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (isSameAssignee(assignee, currentAssignee)) {
+                            handleUnassignSelf();
+                          } else {
+                            handleRemoveAssignee(assignee);
+                          }
+                        }}
+                        className="ml-1 text-muted-foreground hover:text-foreground"
+                      >
+                        <X className="size-3" />
+                      </button>
+                    )}
+                  </Badge>
+                ))
+              ) : (
+                <span className="text-sm text-muted-foreground">No assignees yet</span>
+              )}
+            </div>
           </div>
 
           <div className="space-y-2">

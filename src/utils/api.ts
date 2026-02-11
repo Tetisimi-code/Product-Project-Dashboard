@@ -21,12 +21,17 @@ export interface ApiResponse<T> {
 
 // Helper to get fresh access token
 async function getFreshToken(): Promise<string> {
+  const cachedToken = localStorage.getItem('accessToken');
+  if (cachedToken) {
+    return cachedToken;
+  }
+
   // Try to get the current session which will auto-refresh if needed
   const { data: { session }, error } = await supabase.auth.getSession();
   
   if (error || !session) {
     console.log('No active session, using anon key');
-    return publicAnonKey;
+    return publicAnonKey || '';
   }
   
   // Update localStorage with fresh token
@@ -327,6 +332,10 @@ export async function checkAdminStatus() {
 
 export async function listUsers() {
   return fetchWithAuth<{ users: any[] }>('/admin/users');
+}
+
+export async function getUsers() {
+  return fetchWithAuth<{ users: any[] }>('/users');
 }
 
 export async function deleteUser(userId: string) {

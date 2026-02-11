@@ -4,20 +4,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { Badge } from './ui/badge';
 import { Progress } from './ui/progress';
 import { Button } from './ui/button';
-import { Calendar, CheckCircle2, Circle, Clock, Pencil, Trash2, Code, TestTube, Rocket, Ban, Undo, AlertCircle, ExternalLink, Link2, FileText } from 'lucide-react';
+import { Calendar, CheckCircle2, Circle, Clock, Pencil, Trash2, Code, TestTube, Rocket, Ban, Undo, ExternalLink, FileText } from 'lucide-react';
 import { format } from 'date-fns';
 import { EditProjectDialog } from './EditProjectDialog';
 import { FeatureDeploymentDialog } from './FeatureDeploymentDialog';
 import { JiraLinkDialog } from './JiraLinkDialog';
 import { ProjectDocumentationPanel } from './ProjectDocumentationPanel';
-import { TeamMember } from '../utils/api';
 
 interface ProjectCardProps {
   project: Project;
   products: ProductCatalog[];
   features: ProductFeature[];
   currentUser: any;
-  teamMembers: TeamMember[];
+  isAdmin: boolean;
   onUpdate: (project: Project) => void;
   onDelete: (projectId: string) => void;
   onOpenAtlassianSettings?: () => void;
@@ -50,7 +49,7 @@ const deploymentStatusColors = {
   'rolled-back': 'text-orange-500',
 };
 
-export function ProjectCard({ project, products, features, currentUser, teamMembers, onUpdate, onDelete, onOpenAtlassianSettings }: ProjectCardProps) {
+export function ProjectCard({ project, products, features, currentUser, isAdmin, onUpdate, onDelete, onOpenAtlassianSettings }: ProjectCardProps) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isJiraLinkDialogOpen, setIsJiraLinkDialogOpen] = useState(false);
   const [isDocPanelOpen, setIsDocPanelOpen] = useState(false);
@@ -205,6 +204,8 @@ export function ProjectCard({ project, products, features, currentUser, teamMemb
         project={project}
         products={products}
         features={features}
+        currentUser={currentUser}
+        isAdmin={isAdmin}
         onUpdate={onUpdate}
       />
 
@@ -233,7 +234,7 @@ export function ProjectCard({ project, products, features, currentUser, teamMemb
           feature={selectedFeature}
           project={project}
           currentUser={currentUser}
-          teamMembers={teamMembers}
+          isAdmin={isAdmin}
           onUpdate={onUpdate}
         />
       )}
