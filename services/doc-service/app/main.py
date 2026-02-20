@@ -1,3 +1,5 @@
+import base64
+import json
 import os
 import tempfile
 import urllib.request
@@ -15,6 +17,13 @@ SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
 STORAGE_BUCKET = os.environ.get("STORAGE_BUCKET", "doc-output")
 DEFAULT_OUTPUT_PREFIX = os.environ.get("OUTPUT_PREFIX", "manuals")
+GOOGLE_TRANSLATE_API_KEY = os.environ.get("GOOGLE_TRANSLATE_API_KEY")
+GOOGLE_TRANSLATE_PROJECT_ID = os.environ.get("GOOGLE_TRANSLATE_PROJECT_ID")
+GOOGLE_TRANSLATE_LOCATION = os.environ.get("GOOGLE_TRANSLATE_LOCATION", "us-central1")
+GOOGLE_TRANSLATE_SOURCE_LANG = os.environ.get("GOOGLE_TRANSLATE_SOURCE_LANG", "en")
+DOCX_MIME_TYPE = (
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+)
 
 
 class MergeRequest(BaseModel):
@@ -22,6 +31,7 @@ class MergeRequest(BaseModel):
     template_url: str
     module_urls: List[str]
     output_path: Optional[str] = None
+    language: Optional[str] = None
 
 
 def ensure_storage_dir() -> None:
@@ -54,7 +64,7 @@ def upload_to_storage(file_path: str, output_path: str) -> dict:
         headers={
             "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}",
             "apikey": SUPABASE_SERVICE_ROLE_KEY,
-            "Content-Type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "Content-Type": DOCX_MIME_TYPE,
         },
     )
     with urllib.request.urlopen(request) as response:
@@ -72,6 +82,62 @@ def upload_to_storage(file_path: str, output_path: str) -> dict:
 @app.get("/health")
 def health() -> dict:
     return {"status": "ok"}
+
+
+def translate_docx(file_path: str, target_language: str) -> str:
+    if not GOOGLE_TRANSLATE_API_KEY or not GOOGLE_TRANSLATE_PROJECT_ID:
+        raise RuntimeError(
+            "GOOGLE_TRANSLATE_API_KEY and GOOGLE_TRANSLATE_PROJECT_ID are required"
+        )
+
+    with open(file_path, "rb") as file_handle:
+        content = file_handle.read()
+
+    encoded = base64.b64encode(content).decode("utf-8")
+    payload: dict = {
+        "documentInputConfig": {
+            "content": encoded,
+            "mimeType": DOCX_MIME_TYPE,
+        },
+        "documentOutputConfig": {
+            "mimeType": DOCX_MIME_TYPE,
+        },
+        "targetLanguageCode": target_language,
+    }
+
+    if GOOGLE_TRANSLATE_SOURCE_LANG:
+        payload["sourceLanguageCode"] = GOOGLE_TRANSLATE_SOURCE_LANG
+
+    translate_url = (
+        "https://translation.googleapis.com/v3/projects/"
+        f"{GOOGLE_TRANSLATE_PROJECT_ID}/locations/{GOOGLE_TRANSLATE_LOCATION}"
+        f":translateDocument?key={GOOGLE_TRANSLATE_API_KEY}"
+    )
+    request = urllib.request.Request(
+        translate_url,
+        data=json.dumps(payload).encode("utf-8"),
+        method="POST",
+        headers={"Content-Type": "application/json"},
+    )
+
+    with urllib.request.urlopen(request) as response:
+        if response.status >= 400:
+            raise RuntimeError(f"Translation failed: {response.status}")
+        result = json.loads(response.read().decode("utf-8"))
+
+    outputs = (
+        result.get("documentTranslation", {}).get("byteStreamOutputs") or []
+    )
+    if not outputs:
+        raise RuntimeError("Translation failed: no output returned")
+
+    translated_bytes = base64.b64decode(outputs[0])
+    translated_path = os.path.join(
+        DOC_STORAGE_PATH, f"translated-{os.path.basename(file_path)}"
+    )
+    with open(translated_path, "wb") as file_handle:
+        file_handle.write(translated_bytes)
+    return translated_path
 
 
 @app.post("/merge")
@@ -94,6 +160,10 @@ def merge_docs(request: MergeRequest) -> dict:
 
     temp_output_path = os.path.join(DOC_STORAGE_PATH, f"{request.job_id}.docx")
     composer.save(temp_output_path)
+
+    target_language = (request.language or "en").strip()
+    if target_language.lower() != "en":
+        temp_output_path = translate_docx(temp_output_path, target_language)
 
     output_info = upload_to_storage(temp_output_path, output_path)
     return {"job_id": request.job_id, "output": output_info}

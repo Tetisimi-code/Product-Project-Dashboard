@@ -3,7 +3,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { Button } from './ui/button';
 import { Alert, AlertDescription } from './ui/alert';
 import { CheckCircle2, XCircle, ExternalLink, Loader2, Copy, Check } from 'lucide-react';
-import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { publicAnonKey } from '../utils/supabase/info';
+import { buildApiUrl } from '../utils/apiBase';
 import { toast } from 'sonner@2.0.3';
 
 export function SetupGuide() {
@@ -15,7 +16,7 @@ export function SetupGuide() {
     setIsChecking(true);
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-bbcbebd7/health`,
+        buildApiUrl('/health'),
         {
           headers: {
             'Authorization': `Bearer ${publicAnonKey}`,

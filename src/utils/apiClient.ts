@@ -13,6 +13,14 @@ import { getApiConfig, features, authConfig } from './config';
 import { withRetry, parseError, networkMonitor } from './errorHandling';
 
 const config = getApiConfig();
+const normalizeBaseUrl = (baseUrl: string) => baseUrl.replace(/\/+$/, '');
+const buildUrl = (endpoint: string) => {
+  if (endpoint.startsWith('http')) {
+    return endpoint;
+  }
+  const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  return `${normalizeBaseUrl(config.apiUrl)}${normalizedEndpoint}`;
+};
 
 export interface ApiResponse<T> {
   data?: T;
@@ -73,9 +81,7 @@ async function fetchWithAuth<T>(
     try {
       const token = localStorage.getItem(authConfig.tokenKey);
       
-      const url = endpoint.startsWith('http') 
-        ? endpoint 
-        : `${config.apiUrl}${endpoint}`;
+      const url = buildUrl(endpoint);
       
       const headers: HeadersInit = {
         'Content-Type': 'application/json',

@@ -4,6 +4,7 @@ import { Button } from './ui/button';
 import { Alert, AlertDescription } from './ui/alert';
 import { CheckCircle, XCircle, AlertCircle, RefreshCw, Wifi, WifiOff } from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { API_BASE_URL, buildApiUrl } from '../utils/apiBase';
 
 interface ConnectionDiagnosticsProps {
   open: boolean;
@@ -82,7 +83,7 @@ export function ConnectionDiagnostics({ open, onOpenChange }: ConnectionDiagnost
     // Test 3: API Function Health
     updateTest(2, { status: 'running' });
     try {
-      const apiUrl = `https://${projectId}.supabase.co/functions/v1/make-server-bbcbebd7/health`;
+      const apiUrl = buildApiUrl('/health');
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000);
 
@@ -181,7 +182,7 @@ export function ConnectionDiagnostics({ open, onOpenChange }: ConnectionDiagnost
             <AlertDescription>
               <strong>Project ID:</strong> {projectId}
               <br />
-              <strong>API URL:</strong> https://{projectId}.supabase.co/functions/v1/make-server-bbcbebd7
+              <strong>API URL:</strong> {API_BASE_URL}
               <br />
               <strong>Browser:</strong> {navigator.userAgent.split(' ').slice(-1)[0]}
             </AlertDescription>

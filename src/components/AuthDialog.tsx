@@ -6,7 +6,8 @@ import { Label } from './ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { toast } from 'sonner@2.0.3';
 import { supabase } from '../utils/supabase/client';
-import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { publicAnonKey } from '../utils/supabase/info';
+import { buildApiUrl } from '../utils/apiBase';
 
 // NOTE: Email verification and domain restrictions have been disabled
 // Users can sign up with any email address without verification
@@ -69,7 +70,7 @@ export function AuthDialog({ open, onAuthSuccess }: AuthDialogProps) {
     try {
       // Call the server to create the user
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-bbcbebd7/signup`,
+        buildApiUrl('/signup'),
         {
           method: 'POST',
           headers: {

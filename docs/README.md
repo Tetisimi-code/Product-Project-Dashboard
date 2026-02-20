@@ -32,6 +32,10 @@ Assembler responsibilities and interface are described in `ASSEMBLER.md`.
 
 Dashboard integration details are in `DASHBOARD_INTEGRATION.md`.
 
+## Platform architecture
+
+System architecture schematics are in `platform/systems-architecture.md`.
+
 ## Project configuration
 
 Project config schema and example are in `PROJECT_CONFIG_SCHEMA.md`.

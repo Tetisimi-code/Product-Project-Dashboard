@@ -6,7 +6,7 @@ import { Label } from './ui/label';
 import { Separator } from './ui/separator';
 import { toast } from 'sonner@2.0.3';
 import { supabase } from '../utils/supabase/client';
-import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { buildApiUrl } from '../utils/apiBase';
 
 // Configuration: Allowed email domains (must match server configuration)
 const ALLOWED_EMAIL_DOMAINS = [
@@ -88,7 +88,7 @@ export function AccountSettingsDialog({
       // Also update on the server
       const token = await getFreshToken();
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-bbcbebd7/update-profile`,
+        buildApiUrl('/update-profile'),
         {
           method: 'POST',
           headers: {
@@ -138,7 +138,7 @@ export function AccountSettingsDialog({
       // Call the server to update email (admin only)
       const token = await getFreshToken();
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-bbcbebd7/update-email`,
+        buildApiUrl('/update-email'),
         {
           method: 'POST',
           headers: {

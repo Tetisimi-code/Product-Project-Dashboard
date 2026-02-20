@@ -26,9 +26,18 @@ Body:
 - `projectId` (string)
 - `documentType` (string, default `user-manual`)
 - `outputFormat` (string, default `docx`)
+- `language` (string, default `en`)
+
+Supported languages (default set):
+
+- `en` English
+- `fr` French
+- `ar-SA` Arabic (Saudi Arabia)
+- `es` Spanish
+- `de` German
+- `zh-CN` Chinese (Simplified)
 
 ## Response
 
 - Success: file download (stream or signed URL)
 - Failure: error message with retry instructions
-

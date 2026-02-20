@@ -17,6 +17,14 @@ const DOC_SERVICE_URL = Deno.env.get('DOC_SERVICE_URL') || 'http://localhost:800
 const DOC_TEMPLATE_URL = Deno.env.get('DOC_TEMPLATE_URL') || '';
 const DOC_SIGNED_URL_TTL = Number(Deno.env.get('DOC_SIGNED_URL_TTL') || '3600');
 const DOC_SERVICE_TIMEOUT_MS = Number(Deno.env.get('DOC_SERVICE_TIMEOUT_MS') || '15000');
+const SUPPORTED_DOC_LANGUAGES = new Map<string, string>([
+  ['en', 'en'],
+  ['fr', 'fr'],
+  ['ar-sa', 'ar-SA'],
+  ['es', 'es'],
+  ['de', 'de'],
+  ['zh-cn', 'zh-CN'],
+]);
 
 // Enable logger
 app.use('*', logger(console.log));
@@ -1096,7 +1104,7 @@ app.post("/server/docs/generate", async (c) => {
       return c.json({ error: "Unauthorized" }, 401);
     }
 
-    const { projectId, idempotencyKey, templateUrl } = await c.req.json();
+    const { projectId, idempotencyKey, templateUrl, language } = await c.req.json();
     if (!projectId) {
       return c.json({ error: 'projectId is required' }, 400);
     }
@@ -1104,6 +1112,12 @@ app.post("/server/docs/generate", async (c) => {
     const effectiveTemplateUrl = templateUrl || DOC_TEMPLATE_URL;
     if (!effectiveTemplateUrl) {
       return c.json({ error: 'templateUrl is required' }, 500);
+    }
+
+    const languageKey = typeof language === 'string' ? language.trim().toLowerCase() : 'en';
+    const resolvedLanguage = SUPPORTED_DOC_LANGUAGES.get(languageKey) || null;
+    if (!resolvedLanguage) {
+      return c.json({ error: `Unsupported language: ${language}` }, 400);
     }
 
     const projects = await kv.get('projects') || [];
@@ -1176,6 +1190,7 @@ app.post("/server/docs/generate", async (c) => {
       templateUrl: effectiveTemplateUrl,
       products: productIds,
       manuals: manualUrls,
+      language: resolvedLanguage,
     }));
     const resolvedIdempotencyKey = idempotencyKey || fallbackKey;
     const idempotencyMapKey = `doc_idempotency_${resolvedIdempotencyKey}`;
@@ -1207,6 +1222,7 @@ app.post("/server/docs/generate", async (c) => {
       status: 'pending',
       templateUrl: effectiveTemplateUrl,
       manualUrls,
+      language: resolvedLanguage,
       idempotencyKey: resolvedIdempotencyKey,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -1222,10 +1238,14 @@ app.post("/server/docs/generate", async (c) => {
           updatedAt: new Date().toISOString(),
         });
 
+        const languagePath = resolvedLanguage.toLowerCase();
+        const outputPath = `manuals/${projectId}/${languagePath}/${jobId}.docx`;
         const payload = {
           job_id: jobId,
           template_url: effectiveTemplateUrl,
           module_urls: manualUrls,
+          output_path: outputPath,
+          language: resolvedLanguage,
         };
 
         const response = await fetchWithTimeout(`${DOC_SERVICE_URL}/merge`, {

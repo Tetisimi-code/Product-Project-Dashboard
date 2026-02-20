@@ -25,7 +25,7 @@ import { Toaster } from './components/ui/sonner';
 import { toast } from 'sonner@2.0.3';
 import logoImage from 'figma:asset/54d312aed3f16e91c436bfb4f646101be4eacef7.png';
 import { supabase } from './utils/supabase/client';
-import { projectId, publicAnonKey } from './utils/supabase/info';
+import { buildApiUrl } from './utils/apiBase';
 import * as api from './utils/api';
 
 export interface ProductFeature {
@@ -82,6 +82,7 @@ export interface Project {
   featureDeployments?: Record<string, FeatureDeploymentInfo>; // keyed by featureId
   location?: string; // Optional: City, Country or Region
   assignees?: AssignedUser[];
+  commercial?: boolean;
 }
 
 const mockProducts: ProductCatalog[] = [
@@ -687,7 +688,7 @@ export default function App() {
       const token = session?.access_token || localStorage.getItem('accessToken') || '';
       
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-bbcbebd7/delete-my-account`,
+        buildApiUrl('/delete-my-account'),
         {
           method: 'DELETE',
           headers: {

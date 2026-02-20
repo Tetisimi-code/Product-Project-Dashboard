@@ -5,6 +5,7 @@ import { FileText, Copy, Check, BookOpen } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner@2.0.3';
 import * as api from '../utils/api';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 
 interface ProjectDocumentationPanelProps {
   open: boolean;
@@ -23,6 +24,16 @@ export function ProjectDocumentationPanel({
 }: ProjectDocumentationPanelProps) {
   const [copied, setCopied] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [selectedLanguage, setSelectedLanguage] = useState('en');
+
+  const availableLanguages = [
+    { value: 'en', label: 'English' },
+    { value: 'fr', label: 'French' },
+    { value: 'ar-SA', label: 'Arabic (Saudi Arabia)' },
+    { value: 'es', label: 'Spanish' },
+    { value: 'de', label: 'German' },
+    { value: 'zh-CN', label: 'Chinese (Simplified)' },
+  ];
 
   const usedFeatures = features.filter(f => project.featuresUsed.includes(f.id));
   const deployedFeatureIds = new Set(project.deployedFeatures);
@@ -69,9 +80,9 @@ Actions:
         setTimeout(() => reject(new Error('Manual generation timed out')), manualTimeoutMs);
       });
 
-      const idempotencyKey = `${project.id}:${usedFeatures.map(feature => feature.id).join(',')}`;
+      const idempotencyKey = `${project.id}:${selectedLanguage}:${usedFeatures.map(feature => feature.id).join(',')}`;
       const startResult = await Promise.race([
-        api.generateUserManual(project.id, idempotencyKey),
+        api.generateUserManual(project.id, idempotencyKey, selectedLanguage),
         manualTimeout,
       ]);
       if (startResult.error || !startResult.data?.jobId) {
@@ -116,11 +127,14 @@ Actions:
         throw new Error('Download link unavailable');
       }
 
+      const languageSuffix = selectedLanguage === 'en'
+        ? ''
+        : `-${selectedLanguage.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
       const blob = await response.blob();
       const objectUrl = window.URL.createObjectURL(blob);
       const anchor = document.createElement('a');
       anchor.href = objectUrl;
-      anchor.download = `${project.name.replace(/[^a-z0-9-_]+/gi, '-')}-user-manual.docx`;
+      anchor.download = `${project.name.replace(/[^a-z0-9-_]+/gi, '-')}-user-manual${languageSuffix}.docx`;
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();
@@ -234,6 +248,21 @@ Actions:
           </div>
 
           <div className="flex flex-col gap-3 pt-2">
+            <div className="space-y-2">
+              <div className="text-sm font-medium text-slate-600">Language</div>
+              <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select language" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableLanguages.map((language) => (
+                    <SelectItem key={language.value} value={language.value}>
+                      {language.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <Button
               className="w-full justify-start gap-2 h-auto py-4"
               variant="outline"

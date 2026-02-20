@@ -1,9 +1,10 @@
 import { projectId, publicAnonKey } from './supabase/info';
 import { supabase } from './supabase/client';
+import { API_BASE_URL, buildApiUrl } from './apiBase';
 
 // Use VITE_API_URL if available, otherwise fall back to default
-const API_URL = import.meta.env.VITE_API_URL || `https://${projectId}.supabase.co/functions/v1/make-server-bbcbebd7`;
-export { API_URL };
+const API_URL = API_BASE_URL;
+export { API_URL, buildApiUrl };
 const REQUEST_TIMEOUT = 30000; // 30 seconds
 
 // Log API configuration on startup
@@ -88,7 +89,7 @@ async function fetchWithAuth<T>(
     // Always get fresh token before making request
     const token = await getFreshToken();
     
-    const url = `${API_URL}${endpoint}`;
+    const url = buildApiUrl(endpoint);
     console.log(`API Request: ${options.method || 'GET'} ${url}`);
     
     const response = await fetchWithTimeout(url, {
@@ -145,12 +146,12 @@ async function fetchWithAuth<T>(
     if (error instanceof TypeError) {
       if (error.message.includes('fetch')) {
         return { 
-          error: `Unable to connect to the server (${API_URL}${endpoint}). Please check your internet connection and try again.` 
+          error: `Unable to connect to the server (${buildApiUrl(endpoint)}). Please check your internet connection and try again.` 
         };
       }
       if (error.message.includes('timeout')) {
         return { 
-          error: `Request timeout (${API_URL}${endpoint}). The server took too long to respond. Please try again.` 
+          error: `Request timeout (${buildApiUrl(endpoint)}). The server took too long to respond. Please try again.` 
         };
       }
     }
@@ -300,10 +301,10 @@ async function fetchDocsWithFallback<T>(path: string, options: RequestInit = {})
   return fetchWithAuth<T>(`${DOC_FALLBACK_PREFIX}${path}`, options);
 }
 
-export async function generateUserManual(projectId: string, idempotencyKey?: string) {
+export async function generateUserManual(projectId: string, idempotencyKey?: string, language?: string) {
   return fetchDocsWithFallback<{ jobId: string }>('/generate', {
     method: 'POST',
-    body: JSON.stringify({ projectId, idempotencyKey }),
+    body: JSON.stringify({ projectId, idempotencyKey, language }),
   });
 }
 

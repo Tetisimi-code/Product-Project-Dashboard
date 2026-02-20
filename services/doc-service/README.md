@@ -6,7 +6,7 @@ This service should remain internal-only with no UI or auth complexity.
 ## Endpoints
 
 - `GET /health` -> health check
-- `POST /merge` -> merges template + module docs
+- `POST /merge` -> merges template + module docs (optional translation via `language`)
 
 ## Run locally
 
@@ -24,3 +24,7 @@ uvicorn app.main:app --reload --port 8000
 - `SUPABASE_SERVICE_ROLE_KEY` (required for upload)
 - `STORAGE_BUCKET` (default: `doc-output`)
 - `OUTPUT_PREFIX` (default: `manuals`)
+- `GOOGLE_TRANSLATE_API_KEY` (required for translations)
+- `GOOGLE_TRANSLATE_PROJECT_ID` (required for translations)
+- `GOOGLE_TRANSLATE_LOCATION` (default: `us-central1`)
+- `GOOGLE_TRANSLATE_SOURCE_LANG` (default: `en`)
