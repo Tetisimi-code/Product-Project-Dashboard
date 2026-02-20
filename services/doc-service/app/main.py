@@ -2,6 +2,7 @@ import base64
 import json
 import os
 import tempfile
+import urllib.error
 import urllib.request
 from typing import List, Optional
 
@@ -120,10 +121,18 @@ def translate_docx(file_path: str, target_language: str) -> str:
         headers={"Content-Type": "application/json"},
     )
 
-    with urllib.request.urlopen(request) as response:
-        if response.status >= 400:
-            raise RuntimeError(f"Translation failed: {response.status}")
-        result = json.loads(response.read().decode("utf-8"))
+    try:
+        with urllib.request.urlopen(request) as response:
+            if response.status >= 400:
+                raise RuntimeError(f"Translation failed: {response.status}")
+            result = json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as error:
+        error_body = error.read().decode("utf-8", errors="replace")
+        raise RuntimeError(
+            f"Translation failed ({error.code}): {error_body}"
+        ) from error
+    except urllib.error.URLError as error:
+        raise RuntimeError(f"Translation failed (network): {error}") from error
 
     outputs = (
         result.get("documentTranslation", {}).get("byteStreamOutputs") or []
@@ -163,7 +172,10 @@ def merge_docs(request: MergeRequest) -> dict:
 
     target_language = (request.language or "en").strip()
     if target_language.lower() != "en":
-        temp_output_path = translate_docx(temp_output_path, target_language)
+        try:
+            temp_output_path = translate_docx(temp_output_path, target_language)
+        except RuntimeError as error:
+            raise HTTPException(status_code=502, detail=str(error)) from error
 
     output_info = upload_to_storage(temp_output_path, output_path)
     return {"job_id": request.job_id, "output": output_info}
