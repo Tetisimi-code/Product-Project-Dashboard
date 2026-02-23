@@ -10,6 +10,8 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from docx import Document
 from docxcompose.composer import Composer
+from google.auth.transport.requests import Request
+from google.oauth2 import service_account
 
 app = FastAPI()
 
@@ -18,10 +20,12 @@ SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
 STORAGE_BUCKET = os.environ.get("STORAGE_BUCKET", "doc-output")
 DEFAULT_OUTPUT_PREFIX = os.environ.get("OUTPUT_PREFIX", "manuals")
-GOOGLE_TRANSLATE_API_KEY = os.environ.get("GOOGLE_TRANSLATE_API_KEY")
 GOOGLE_TRANSLATE_PROJECT_ID = os.environ.get("GOOGLE_TRANSLATE_PROJECT_ID")
 GOOGLE_TRANSLATE_LOCATION = os.environ.get("GOOGLE_TRANSLATE_LOCATION", "us-central1")
 GOOGLE_TRANSLATE_SOURCE_LANG = os.environ.get("GOOGLE_TRANSLATE_SOURCE_LANG", "en")
+GOOGLE_SERVICE_ACCOUNT_JSON = os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON")
+GOOGLE_SERVICE_ACCOUNT_FILE = os.environ.get("GOOGLE_SERVICE_ACCOUNT_FILE")
+GOOGLE_TRANSLATE_SCOPES = ["https://www.googleapis.com/auth/cloud-translation"]
 DOCX_MIME_TYPE = (
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 )
@@ -85,11 +89,33 @@ def health() -> dict:
     return {"status": "ok"}
 
 
-def translate_docx(file_path: str, target_language: str) -> str:
-    if not GOOGLE_TRANSLATE_API_KEY or not GOOGLE_TRANSLATE_PROJECT_ID:
+def load_service_account_info() -> Optional[dict]:
+    if GOOGLE_SERVICE_ACCOUNT_JSON:
+        return json.loads(GOOGLE_SERVICE_ACCOUNT_JSON)
+    if GOOGLE_SERVICE_ACCOUNT_FILE:
+        with open(GOOGLE_SERVICE_ACCOUNT_FILE, "r", encoding="utf-8") as file_handle:
+            return json.load(file_handle)
+    return None
+
+
+def get_google_access_token() -> str:
+    service_account_info = load_service_account_info()
+    if not service_account_info:
         raise RuntimeError(
-            "GOOGLE_TRANSLATE_API_KEY and GOOGLE_TRANSLATE_PROJECT_ID are required"
+            "GOOGLE_SERVICE_ACCOUNT_JSON or GOOGLE_SERVICE_ACCOUNT_FILE is required"
         )
+    credentials = service_account.Credentials.from_service_account_info(
+        service_account_info, scopes=GOOGLE_TRANSLATE_SCOPES
+    )
+    credentials.refresh(Request())
+    if not credentials.token:
+        raise RuntimeError("Failed to obtain Google access token")
+    return credentials.token
+
+
+def translate_docx(file_path: str, target_language: str) -> str:
+    if not GOOGLE_TRANSLATE_PROJECT_ID:
+        raise RuntimeError("GOOGLE_TRANSLATE_PROJECT_ID is required")
 
     with open(file_path, "rb") as file_handle:
         content = file_handle.read()
@@ -112,13 +138,17 @@ def translate_docx(file_path: str, target_language: str) -> str:
     translate_url = (
         "https://translation.googleapis.com/v3/projects/"
         f"{GOOGLE_TRANSLATE_PROJECT_ID}/locations/{GOOGLE_TRANSLATE_LOCATION}"
-        f":translateDocument?key={GOOGLE_TRANSLATE_API_KEY}"
+        f":translateDocument"
     )
+    token = get_google_access_token()
     request = urllib.request.Request(
         translate_url,
         data=json.dumps(payload).encode("utf-8"),
         method="POST",
-        headers={"Content-Type": "application/json"},
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {token}",
+        },
     )
 
     try:
