@@ -145,23 +145,10 @@ Actions:
         throw new Error('Manual generation timed out');
       }
 
-      const response = await fetch(downloadUrl);
-      if (!response.ok) {
-        throw new Error('Download link unavailable');
-      }
-
       const languageSuffix = selectedLanguage === 'en'
         ? ''
         : `-${selectedLanguage.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
-      const blob = await response.blob();
-      const objectUrl = window.URL.createObjectURL(blob);
-      const anchor = document.createElement('a');
-      anchor.href = objectUrl;
-      anchor.download = `${project.name.replace(/[^a-z0-9-_]+/gi, '-')}-user-manual${languageSuffix}.docx`;
-      document.body.appendChild(anchor);
-      anchor.click();
-      anchor.remove();
-      window.URL.revokeObjectURL(objectUrl);
+      await downloadManual(downloadUrl, `${project.name}-user-manual${languageSuffix}.docx`);
 
       toast.success('User manual downloaded', { description: project.name });
       setChangeSummary('');
@@ -199,6 +186,51 @@ Actions:
     } finally {
       await refreshManualStatus();
       setIsGenerating(false);
+    }
+  };
+
+  const downloadManual = async (downloadUrl: string, filename: string) => {
+    const response = await fetch(downloadUrl);
+    if (!response.ok) {
+      throw new Error('Download link unavailable');
+    }
+
+    const blob = await response.blob();
+    const objectUrl = window.URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = objectUrl;
+    anchor.download = filename.replace(/[^a-z0-9-_\.]+/gi, '-');
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    window.URL.revokeObjectURL(objectUrl);
+  };
+
+  const handleDownloadLatest = async () => {
+    if (!manualStatus?.jobId) {
+      toast.error('No manual available', { description: 'Generate a manual first.' });
+      return;
+    }
+
+    try {
+      const jobResult = await api.getDocumentationJob(manualStatus.jobId);
+      if (jobResult.error) {
+        throw new Error(jobResult.error);
+      }
+
+      const job = jobResult.data?.job;
+      if (!job?.downloadUrl) {
+        throw new Error('Latest manual is not ready yet.');
+      }
+
+      const languageSuffix = selectedLanguage === 'en'
+        ? ''
+        : `-${selectedLanguage.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+      await downloadManual(job.downloadUrl, `${project.name}-user-manual${languageSuffix}.docx`);
+      toast.success('User manual downloaded', { description: project.name });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to download manual';
+      toast.error('Download failed', { description: message });
     }
   };
 
@@ -324,6 +356,22 @@ Actions:
                 className="min-h-[80px]"
               />
             </div>
+            <Button
+              className="w-full justify-start gap-2 h-auto py-4"
+              variant="secondary"
+              onClick={handleDownloadLatest}
+              disabled={!manualStatus || manualStatus.status !== 'completed'}
+            >
+              <BookOpen className="size-5" />
+              <div className="flex flex-col items-start">
+                <span className="font-semibold">Download Latest Manual</span>
+                <span className="text-sm text-slate-500 font-normal">
+                  {manualStatus?.status === 'completed'
+                    ? `Version v${manualStatus.version}`
+                    : 'Generate a manual to enable downloads'}
+                </span>
+              </div>
+            </Button>
             <Button
               className="w-full justify-start gap-2 h-auto py-4"
               variant="outline"
