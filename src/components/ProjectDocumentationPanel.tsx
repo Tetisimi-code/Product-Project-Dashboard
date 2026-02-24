@@ -7,6 +7,16 @@ import { toast } from 'sonner@2.0.3';
 import * as api from '../utils/api';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Textarea } from './ui/textarea';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from './ui/alert-dialog';
 
 interface ProjectDocumentationPanelProps {
   open: boolean;
@@ -29,6 +39,7 @@ export function ProjectDocumentationPanel({
   const [changeSummary, setChangeSummary] = useState('');
   const [manualStatus, setManualStatus] = useState<any | null>(null);
   const [manualStatusLoading, setManualStatusLoading] = useState(false);
+  const [showGenerateConfirm, setShowGenerateConfirm] = useState(false);
 
   const availableLanguages = [
     { value: 'en', label: 'English' },
@@ -187,6 +198,10 @@ Actions:
       await refreshManualStatus();
       setIsGenerating(false);
     }
+  };
+
+  const handleRequestGenerate = () => {
+    setShowGenerateConfirm(true);
   };
 
   const downloadManual = async (downloadUrl: string, filename: string) => {
@@ -364,7 +379,14 @@ Actions:
             >
               <BookOpen className="size-5" />
               <div className="flex flex-col items-start">
-                <span className="font-semibold">Download Latest Manual</span>
+                <span className="flex flex-wrap items-center gap-2 font-semibold">
+                  <span>Download Latest Manual</span>
+                  {manualStatus?.status === 'completed' ? (
+                    <span className="rounded-full bg-slate-900/10 px-2 py-0.5 text-xs font-medium text-slate-700">
+                      v{manualStatus.version}
+                    </span>
+                  ) : null}
+                </span>
                 <span className="text-sm text-slate-500 font-normal">
                   {manualStatus?.status === 'completed'
                     ? `Version v${manualStatus.version}`
@@ -375,7 +397,7 @@ Actions:
             <Button
               className="w-full justify-start gap-2 h-auto py-4"
               variant="outline"
-              onClick={handleGenerateManual}
+              onClick={handleRequestGenerate}
               disabled={isGenerating || !canGenerate}
             >
               <BookOpen className="size-5" />
@@ -395,6 +417,29 @@ Actions:
           
         </div>
       </DialogContent>
+      <AlertDialog open={showGenerateConfirm} onOpenChange={setShowGenerateConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Generate a new user manual?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will create a new manual version for {selectedLanguageLabel}. You can add an optional change summary
+              to describe what changed since the last manual.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setShowGenerateConfirm(false);
+                handleGenerateManual();
+              }}
+              className="bg-slate-900 hover:bg-slate-800"
+            >
+              Generate Manual
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }
