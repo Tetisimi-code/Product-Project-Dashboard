@@ -301,15 +301,25 @@ async function fetchDocsWithFallback<T>(path: string, options: RequestInit = {})
   return fetchWithAuth<T>(`${DOC_FALLBACK_PREFIX}${path}`, options);
 }
 
-export async function generateUserManual(projectId: string, idempotencyKey?: string, language?: string) {
+export async function generateUserManual(
+  projectId: string,
+  idempotencyKey?: string,
+  language?: string,
+  changeSummary?: string,
+) {
   return fetchDocsWithFallback<{ jobId: string }>('/generate', {
     method: 'POST',
-    body: JSON.stringify({ projectId, idempotencyKey, language }),
+    body: JSON.stringify({ projectId, idempotencyKey, language, changeSummary }),
   });
 }
 
 export async function getDocumentationJob(jobId: string) {
   return fetchDocsWithFallback<{ job: any }>(`/jobs/${jobId}`);
+}
+
+export async function getDocumentationStatus(projectId: string, language?: string) {
+  const params = language ? `?language=${encodeURIComponent(language)}` : '';
+  return fetchDocsWithFallback<{ manual: any | null }>(`/status/${projectId}${params}`);
 }
 
 // ============================================

@@ -1097,6 +1097,102 @@ app.post("/server/audit", async (c) => {
 // DOCUMENTATION ROUTES
 // ============================================
 
+type ManualSourceSnapshot = {
+  featureIds: string[];
+  productIds: string[];
+  templateUrl: string;
+};
+
+type ManualRecord = {
+  id: string;
+  projectId: string;
+  version: number;
+  language: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  jobId: string;
+  createdAt: string;
+  updatedAt: string;
+  createdBy?: {
+    id: string;
+    email?: string | null;
+    name?: string | null;
+  };
+  changeSummary?: string | null;
+  changeSummaryAuto?: string | null;
+  sourceSnapshot?: ManualSourceSnapshot;
+  output?: { bucket: string; path: string };
+  error?: string;
+};
+
+const DOC_MANUALS_PREFIX = 'doc_manuals_';
+
+const getManualsKey = (projectId: string) => `${DOC_MANUALS_PREFIX}${projectId}`;
+
+const loadProjectManuals = async (projectId: string): Promise<ManualRecord[]> => {
+  return (await kv.get(getManualsKey(projectId))) || [];
+};
+
+const saveProjectManuals = async (projectId: string, manuals: ManualRecord[]) => {
+  await kv.set(getManualsKey(projectId), manuals);
+};
+
+const getLatestManualForLanguage = (manuals: ManualRecord[], language: string) => {
+  const matches = manuals.filter((manual) => manual.language === language);
+  if (matches.length === 0) return null;
+  return matches.reduce((latest, current) => (
+    (current.version || 0) > (latest.version || 0) ? current : latest
+  ));
+};
+
+const getNextManualVersion = (manuals: ManualRecord[], language: string) => {
+  const maxVersion = manuals
+    .filter((manual) => manual.language === language)
+    .reduce((max, manual) => Math.max(max, manual.version || 0), 0);
+  return maxVersion + 1;
+};
+
+const buildAutoSummary = (
+  previous: ManualRecord | null,
+  current: ManualSourceSnapshot,
+): string => {
+  if (!previous?.sourceSnapshot) {
+    return 'Initial manual';
+  }
+
+  const previousSnapshot = previous.sourceSnapshot;
+  const addedFeatures = current.featureIds.filter((id) => !previousSnapshot.featureIds.includes(id));
+  const removedFeatures = previousSnapshot.featureIds.filter((id) => !current.featureIds.includes(id));
+  const addedProducts = current.productIds.filter((id) => !previousSnapshot.productIds.includes(id));
+  const removedProducts = previousSnapshot.productIds.filter((id) => !current.productIds.includes(id));
+
+  const parts: string[] = [];
+  if (addedFeatures.length || removedFeatures.length) {
+    parts.push(`Features: +${addedFeatures.length} -${removedFeatures.length}`);
+  }
+  if (addedProducts.length || removedProducts.length) {
+    parts.push(`Products: +${addedProducts.length} -${removedProducts.length}`);
+  }
+
+  return parts.length > 0 ? parts.join(' · ') : 'Manual regenerated';
+};
+
+const updateManualRecord = async (
+  projectId: string,
+  manualId: string,
+  updates: Partial<ManualRecord>,
+) => {
+  const manuals = await loadProjectManuals(projectId);
+  const index = manuals.findIndex((manual) => manual.id === manualId);
+  if (index === -1) {
+    return;
+  }
+  manuals[index] = {
+    ...manuals[index],
+    ...updates,
+  };
+  await saveProjectManuals(projectId, manuals);
+};
+
 app.post("/server/docs/generate", async (c) => {
   try {
     const user = await verifyAuth(c.req.header('Authorization'));
@@ -1104,7 +1200,7 @@ app.post("/server/docs/generate", async (c) => {
       return c.json({ error: "Unauthorized" }, 401);
     }
 
-    const { projectId, idempotencyKey, templateUrl, language } = await c.req.json();
+    const { projectId, idempotencyKey, templateUrl, language, changeSummary } = await c.req.json();
     if (!projectId) {
       return c.json({ error: 'projectId is required' }, 400);
     }
@@ -1215,6 +1311,38 @@ app.post("/server/docs/generate", async (c) => {
     }
 
     const jobId = crypto.randomUUID();
+    const manualId = crypto.randomUUID();
+    const now = new Date().toISOString();
+    const manualRecords = await loadProjectManuals(projectId);
+    const previousManual = getLatestManualForLanguage(manualRecords, resolvedLanguage);
+    const manualVersion = getNextManualVersion(manualRecords, resolvedLanguage);
+    const trimmedSummary = typeof changeSummary === 'string' ? changeSummary.trim() : '';
+    const sourceSnapshot: ManualSourceSnapshot = {
+      featureIds,
+      productIds,
+      templateUrl: effectiveTemplateUrl,
+    };
+    const manualRecord: ManualRecord = {
+      id: manualId,
+      projectId,
+      version: manualVersion,
+      language: resolvedLanguage,
+      status: 'pending',
+      jobId,
+      createdAt: now,
+      updatedAt: now,
+      createdBy: {
+        id: user.id,
+        email: user.email ?? null,
+        name: user.user_metadata?.name ?? null,
+      },
+      changeSummary: trimmedSummary || null,
+      changeSummaryAuto: buildAutoSummary(previousManual, sourceSnapshot),
+      sourceSnapshot,
+    };
+    manualRecords.unshift(manualRecord);
+    await saveProjectManuals(projectId, manualRecords);
+
     const jobKey = `doc_job_${jobId}`;
     await kv.set(jobKey, {
       jobId,
@@ -1223,19 +1351,26 @@ app.post("/server/docs/generate", async (c) => {
       templateUrl: effectiveTemplateUrl,
       manualUrls,
       language: resolvedLanguage,
+      manualId,
+      manualVersion,
       idempotencyKey: resolvedIdempotencyKey,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      createdAt: now,
+      updatedAt: now,
     });
     await kv.set(idempotencyMapKey, jobId);
 
     const runJob = async () => {
       try {
+        const processingAt = new Date().toISOString();
         await kv.set(jobKey, {
           jobId,
           projectId,
           status: 'processing',
-          updatedAt: new Date().toISOString(),
+          updatedAt: processingAt,
+        });
+        await updateManualRecord(projectId, manualId, {
+          status: 'processing',
+          updatedAt: processingAt,
         });
 
         const languagePath = resolvedLanguage.toLowerCase();
@@ -1256,12 +1391,18 @@ app.post("/server/docs/generate", async (c) => {
 
         if (!response.ok) {
           const message = await response.text();
+          const failedAt = new Date().toISOString();
           await kv.set(jobKey, {
             jobId,
             projectId,
             status: 'failed',
             error: message || 'Doc service error',
-            updatedAt: new Date().toISOString(),
+            updatedAt: failedAt,
+          });
+          await updateManualRecord(projectId, manualId, {
+            status: 'failed',
+            error: message || 'Doc service error',
+            updatedAt: failedAt,
           });
           return;
         }
@@ -1269,30 +1410,48 @@ app.post("/server/docs/generate", async (c) => {
         const result = await response.json();
         const output = result.output;
         if (!output?.bucket || !output?.path) {
+          const failedAt = new Date().toISOString();
           await kv.set(jobKey, {
             jobId,
             projectId,
             status: 'failed',
             error: 'Doc service returned no output location',
-            updatedAt: new Date().toISOString(),
+            updatedAt: failedAt,
+          });
+          await updateManualRecord(projectId, manualId, {
+            status: 'failed',
+            error: 'Doc service returned no output location',
+            updatedAt: failedAt,
           });
           return;
         }
 
+        const completedAt = new Date().toISOString();
         await kv.set(jobKey, {
           jobId,
           projectId,
           status: 'completed',
           output,
-          updatedAt: new Date().toISOString(),
+          updatedAt: completedAt,
+        });
+        await updateManualRecord(projectId, manualId, {
+          status: 'completed',
+          output,
+          updatedAt: completedAt,
         });
       } catch (error) {
+        const failedAt = new Date().toISOString();
         await kv.set(jobKey, {
           jobId,
           projectId,
           status: 'failed',
           error: (error as Error).message,
-          updatedAt: new Date().toISOString(),
+          updatedAt: failedAt,
+        });
+        await updateManualRecord(projectId, manualId, {
+          status: 'failed',
+          error: (error as Error).message,
+          updatedAt: failedAt,
         });
       }
     };
@@ -1331,6 +1490,38 @@ app.get("/server/docs/jobs/:jobId", async (c) => {
       }
     }
     return c.json({ job });
+  } catch (error) {
+    return c.json({ error: (error as Error).message }, 500);
+  }
+});
+
+app.get("/server/docs/status/:projectId", async (c) => {
+  try {
+    const user = await verifyAuth(c.req.header('Authorization'));
+    if (!user) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const projectId = c.req.param('projectId');
+    const languageParam = c.req.query('language');
+    const normalizedLanguage = languageParam
+      ? (SUPPORTED_DOC_LANGUAGES.get(languageParam.trim().toLowerCase()) || languageParam.trim())
+      : null;
+
+    const manuals = await loadProjectManuals(projectId);
+    const filtered = normalizedLanguage
+      ? manuals.filter((manual) => manual.language === normalizedLanguage)
+      : manuals;
+
+    if (filtered.length === 0) {
+      return c.json({ manual: null });
+    }
+
+    const latest = filtered.reduce((currentLatest, manual) => (
+      (manual.version || 0) > (currentLatest.version || 0) ? manual : currentLatest
+    ));
+
+    return c.json({ manual: latest });
   } catch (error) {
     return c.json({ error: (error as Error).message }, 500);
   }

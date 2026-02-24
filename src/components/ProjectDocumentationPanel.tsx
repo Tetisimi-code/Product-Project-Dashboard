@@ -2,10 +2,11 @@ import { ProductCatalog, ProductFeature, Project } from '../App';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
 import { FileText, Copy, Check, BookOpen } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner@2.0.3';
 import * as api from '../utils/api';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Textarea } from './ui/textarea';
 
 interface ProjectDocumentationPanelProps {
   open: boolean;
@@ -25,6 +26,9 @@ export function ProjectDocumentationPanel({
   const [copied, setCopied] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState('en');
+  const [changeSummary, setChangeSummary] = useState('');
+  const [manualStatus, setManualStatus] = useState<any | null>(null);
+  const [manualStatusLoading, setManualStatusLoading] = useState(false);
 
   const availableLanguages = [
     { value: 'en', label: 'English' },
@@ -47,6 +51,24 @@ export function ProjectDocumentationPanel({
   const enabledProductDetails = Array.from(new Set(usedFeatures.map(feature => feature.productId)))
     .map(productId => products.find(product => product.id === productId))
     .filter((product): product is ProductCatalog => Boolean(product));
+  const selectedLanguageLabel = availableLanguages.find(lang => lang.value === selectedLanguage)?.label ?? selectedLanguage;
+
+  const refreshManualStatus = async () => {
+    if (!project?.id) return;
+    setManualStatusLoading(true);
+    const result = await api.getDocumentationStatus(project.id, selectedLanguage);
+    if (result.error) {
+      setManualStatus(null);
+    } else {
+      setManualStatus(result.data?.manual ?? null);
+    }
+    setManualStatusLoading(false);
+  };
+
+  useEffect(() => {
+    if (!open) return;
+    refreshManualStatus();
+  }, [open, project.id, selectedLanguage]);
 
   const documentationText = `Project User Manual
 
@@ -82,7 +104,7 @@ Actions:
 
       const idempotencyKey = `${project.id}:${selectedLanguage}:${usedFeatures.map(feature => feature.id).join(',')}`;
       const startResult = await Promise.race([
-        api.generateUserManual(project.id, idempotencyKey, selectedLanguage),
+        api.generateUserManual(project.id, idempotencyKey, selectedLanguage, changeSummary),
         manualTimeout,
       ]);
       if (startResult.error || !startResult.data?.jobId) {
@@ -90,6 +112,7 @@ Actions:
       }
 
       const jobId = startResult.data.jobId;
+      await refreshManualStatus();
       const pollDelayMs = 2000;
       const pollTimeoutMs = 10000;
       const pollDeadline = Date.now() + pollTimeoutMs;
@@ -141,6 +164,7 @@ Actions:
       window.URL.revokeObjectURL(objectUrl);
 
       toast.success('User manual downloaded', { description: project.name });
+      setChangeSummary('');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to generate manual';
       const fallbackManuals = enabledProductDetails.filter(product => product.manualUrl);
@@ -173,6 +197,7 @@ Actions:
         });
       }
     } finally {
+      await refreshManualStatus();
       setIsGenerating(false);
     }
   };
@@ -248,6 +273,33 @@ Actions:
           </div>
 
           <div className="flex flex-col gap-3 pt-2">
+            <div className="rounded-lg border border-slate-200 bg-white/70 p-4 text-sm text-slate-700">
+              <div className="flex items-center justify-between">
+                <div className="font-medium text-slate-700">Latest manual</div>
+                <div className="text-xs text-slate-500">
+                  {manualStatusLoading ? 'Checking...' : manualStatus ? `v${manualStatus.version}` : 'No manual yet'}
+                </div>
+              </div>
+              <div className="mt-2 space-y-1 text-xs text-slate-500">
+                <div>Language: {selectedLanguageLabel}</div>
+                <div>Status: {manualStatus?.status ?? 'Not generated'}</div>
+                {manualStatus?.updatedAt || manualStatus?.createdAt ? (
+                  <div>
+                    Last updated:{' '}
+                    {new Date(manualStatus.updatedAt || manualStatus.createdAt).toLocaleString()}
+                  </div>
+                ) : null}
+                {manualStatus?.changeSummary || manualStatus?.changeSummaryAuto ? (
+                  <div>
+                    Changes:{' '}
+                    {manualStatus.changeSummary || manualStatus.changeSummaryAuto}
+                  </div>
+                ) : null}
+                {manualStatus?.error ? (
+                  <div className="text-rose-600">Error: {manualStatus.error}</div>
+                ) : null}
+              </div>
+            </div>
             <div className="space-y-2">
               <div className="text-sm font-medium text-slate-600">Language</div>
               <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
@@ -262,6 +314,15 @@ Actions:
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-2">
+              <div className="text-sm font-medium text-slate-600">Change summary (optional)</div>
+              <Textarea
+                value={changeSummary}
+                onChange={(event) => setChangeSummary(event.target.value)}
+                placeholder="Describe what changed since the last manual..."
+                className="min-h-[80px]"
+              />
             </div>
             <Button
               className="w-full justify-start gap-2 h-auto py-4"
